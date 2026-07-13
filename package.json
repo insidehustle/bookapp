@@ -2,7 +2,7 @@
   "name": "book-writing-assistant",
   "version": "0.1.0",
   "private": true,
-  "description": "AI-powered book writer/rewriter web app built on Next.js and the Claude API.",
+  "description": "AI-powered book writer/rewriter web app built on Next.js and the Gemini API.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio"
