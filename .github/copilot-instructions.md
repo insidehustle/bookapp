@@ -1,0 +1,4 @@
+- [ ] Set up a minimal Node.js application scaffold in the current workspace.
+- [ ] Include startup instructions in `README.md`.
+- [ ] Provide a `package.json` with a `start` script.
+- [ ] Keep the project simple and ready to run with `npm install` and `npm start`.
