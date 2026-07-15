@@ -22,6 +22,29 @@ export async function createChapter(projectId: string) {
   redirect(`/projects/${projectId}/chapters/${chapter.id}`);
 }
 
+/**
+ * Same chapter-creation logic as createChapter, but returns the created
+ * chapter instead of redirecting - used by client-driven flows (like
+ * writing the whole book) that create chapters in a loop without navigating.
+ */
+export async function createChapterSilent(projectId: string) {
+  const userId = await requireUserId();
+  await getOwnedProject(projectId, userId);
+
+  const last = await prisma.chapter.findFirst({
+    where: { projectId },
+    orderBy: { order: "desc" },
+  });
+  const order = (last?.order ?? 0) + 1;
+
+  const chapter = await prisma.chapter.create({
+    data: { projectId, order, title: `Chapter ${order}`, content: "" },
+  });
+
+  revalidatePath(`/projects/${projectId}`);
+  return chapter;
+}
+
 export async function deleteChapter(projectId: string, chapterId: string) {
   const userId = await requireUserId();
   await getOwnedProject(projectId, userId);

@@ -10,6 +10,7 @@ export const runtime = "nodejs";
 const bodySchema = z.object({
   instruction: z.string().max(2000).optional(),
   fileIds: z.array(z.string()).optional(),
+  targetWordCount: z.number().int().positive().optional(),
 });
 
 export async function POST(
@@ -23,6 +24,7 @@ export async function POST(
   const parsedBody = bodySchema.safeParse(await req.json().catch(() => ({})));
   const instruction = parsedBody.success ? (parsedBody.data.instruction ?? "").trim() : "";
   const fileIds = parsedBody.success ? parsedBody.data.fileIds : undefined;
+  const targetWordCount = parsedBody.success ? parsedBody.data.targetWordCount : undefined;
 
   const chapter = await prisma.chapter.findFirst({ where: { id: chapterId, projectId } });
   if (!chapter) {
@@ -59,6 +61,7 @@ export async function POST(
           chapterTitle: chapter.title,
           instruction: instruction || null,
           referenceFilesText: renderReferenceFilesBlock(referenceFiles) || null,
+          targetWordCount: targetWordCount ?? null,
         });
 
         for await (const chunk of stream) {

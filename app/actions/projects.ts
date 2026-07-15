@@ -53,6 +53,8 @@ export async function updateProject(projectId: string, formData: FormData) {
   });
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/settings`);
+  revalidatePath("/projects");
 }
 
 export async function deleteProject(projectId: string) {

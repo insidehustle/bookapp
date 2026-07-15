@@ -20,6 +20,7 @@ export async function streamChapterDraft(params: {
   chapterTitle: string;
   instruction: string | null;
   referenceFilesText?: string | null;
+  targetWordCount?: number | null;
 }) {
   const contextParts = [
     `Book title: ${params.projectTitle}`,
@@ -37,6 +38,9 @@ export async function streamChapterDraft(params: {
   const instruction = [
     `Write chapter ${params.chapterOrder}${params.chapterTitle ? `: ${params.chapterTitle}` : ""}.`,
     params.instruction ?? "",
+    params.targetWordCount
+      ? `Aim for approximately ${params.targetWordCount.toLocaleString()} words for this chapter - this length matters, so do not wrap up or stop early just because the scene feels resolved. Develop the scene(s) fully with detail, dialogue, and interiority to reach that length.`
+      : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -46,7 +50,7 @@ export async function streamChapterDraft(params: {
     contents: [{ role: "user", parts: [{ text: instruction }] }],
     config: {
       systemInstruction: `${SYSTEM_PROMPT}\n\n${contextParts.join("\n\n")}`,
-      maxOutputTokens: 8000,
+      maxOutputTokens: 12000,
     },
   });
 }

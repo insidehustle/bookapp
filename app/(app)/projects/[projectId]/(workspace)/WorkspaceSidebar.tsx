@@ -40,6 +40,13 @@ export function WorkspaceSidebar({
         >
           Manuscript
         </Link>
+        <Link
+          href={`/projects/${projectId}/settings`}
+          onClick={closeSidebar}
+          className="py-1 text-muted transition-colors hover:text-accent"
+        >
+          Settings
+        </Link>
       </div>
 
       <div>
