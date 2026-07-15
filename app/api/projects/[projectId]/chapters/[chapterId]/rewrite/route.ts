@@ -3,12 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { streamChapterRewrite } from "@/lib/claude/streamChapterRewrite";
+import { renderReferenceFilesBlock } from "@/lib/claude/promptBuilder";
 import { classifyStopReason, encodeStreamTrailer } from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
   instruction: z.string().min(1).max(2000),
+  fileIds: z.array(z.string()).optional(),
 });
 
 export async function POST(
@@ -23,7 +25,7 @@ export async function POST(
   if (!parsedBody.success) {
     return NextResponse.json({ error: "An instruction is required." }, { status: 400 });
   }
-  const { instruction } = parsedBody.data;
+  const { instruction, fileIds } = parsedBody.data;
 
   const chapter = await prisma.chapter.findFirst({ where: { id: chapterId, projectId } });
   if (!chapter) {
@@ -36,12 +38,15 @@ export async function POST(
     );
   }
 
-  const [planningDocs, otherChapters] = await Promise.all([
+  const [planningDocs, otherChapters, referenceFiles] = await Promise.all([
     prisma.planningDocument.findMany({ where: { projectId } }),
     prisma.chapter.findMany({
       where: { projectId, id: { not: chapterId } },
       orderBy: { order: "asc" },
     }),
+    fileIds && fileIds.length > 0
+      ? prisma.manuscriptFile.findMany({ where: { projectId, id: { in: fileIds } } })
+      : Promise.resolve([]),
   ]);
 
   let full = "";
@@ -60,6 +65,7 @@ export async function POST(
           chapterTitle: chapter.title,
           currentContent: chapter.content,
           instruction,
+          referenceFilesText: renderReferenceFilesBlock(referenceFiles) || null,
         });
 
         for await (const chunk of stream) {

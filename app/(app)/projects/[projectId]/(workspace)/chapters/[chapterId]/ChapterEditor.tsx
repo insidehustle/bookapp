@@ -23,9 +23,25 @@ export function ChapterEditor({
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
-  const [rewriteModalOpen, setRewriteModalOpen] = useState(false);
-  const [rewriteInstruction, setRewriteInstruction] = useState("");
+  const [composeModalOpen, setComposeModalOpen] = useState(false);
+  const [composeInstruction, setComposeInstruction] = useState("");
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+
+  const mode: "write" | "rewrite" = content.trim() ? "rewrite" : "write";
+
+  function toggleFile(fileId: string) {
+    setSelectedFileIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(fileId)) {
+        next.delete(fileId);
+      } else {
+        next.add(fileId);
+      }
+      return next;
+    });
+  }
 
   async function streamFrom(url: string, body?: unknown) {
     setIsStreaming(true);
@@ -74,17 +90,15 @@ export function ChapterEditor({
     }
   }
 
-  async function handleWrite() {
-    await streamFrom(`/api/projects/${projectId}/chapters/${chapter.id}/generate`);
-  }
-
-  async function handleRewrite() {
-    if (!rewriteInstruction.trim()) return;
-    setRewriteModalOpen(false);
-    await streamFrom(`/api/projects/${projectId}/chapters/${chapter.id}/rewrite`, {
-      instruction: rewriteInstruction.trim(),
+  async function handleCompose() {
+    if (mode === "rewrite" && !composeInstruction.trim()) return;
+    setComposeModalOpen(false);
+    const endpoint = mode === "write" ? "generate" : "rewrite";
+    await streamFrom(`/api/projects/${projectId}/chapters/${chapter.id}/${endpoint}`, {
+      instruction: composeInstruction.trim(),
+      fileIds: Array.from(selectedFileIds),
     });
-    setRewriteInstruction("");
+    setComposeInstruction("");
   }
 
   async function handleSave() {
@@ -142,20 +156,14 @@ export function ChapterEditor({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface/60 p-2">
-        {!content.trim() ? (
-          <Button onClick={handleWrite} disabled={isStreaming} className="px-3 py-1.5 text-xs">
-            {isStreaming ? "Writing…" : "Write"}
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            onClick={() => setRewriteModalOpen(true)}
-            disabled={isStreaming}
-            className="px-3 py-1.5 text-xs"
-          >
-            Rewrite
-          </Button>
-        )}
+        <Button
+          variant={mode === "rewrite" ? "secondary" : "primary"}
+          onClick={() => setComposeModalOpen(true)}
+          disabled={isStreaming}
+          className="px-3 py-1.5 text-xs"
+        >
+          {isStreaming ? "Writing…" : mode === "write" ? "Write" : "Rewrite"}
+        </Button>
         {hasPrevious && (
           <Button
             variant="ghost"
@@ -189,30 +197,66 @@ export function ChapterEditor({
         projectFiles={files}
       />
 
-      {rewriteModalOpen && (
+      {composeModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="flex w-full max-w-lg flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-[0_0_60px_-15px_var(--accent)]">
-            <p className="text-sm font-medium">Rewrite this chapter</p>
+            <p className="text-sm font-medium">
+              {mode === "write" ? "Write this chapter" : "Rewrite this chapter"}
+            </p>
             <textarea
-              value={rewriteInstruction}
-              onChange={(event) => setRewriteInstruction(event.target.value)}
-              placeholder="e.g. Make the pacing tighter, add more tension to the ending..."
+              value={composeInstruction}
+              onChange={(event) => setComposeInstruction(event.target.value)}
+              placeholder={
+                mode === "write"
+                  ? "Optional - e.g. Open with the storm scene, keep it under 2000 words..."
+                  : "e.g. Make the pacing tighter, add more tension to the ending..."
+              }
               rows={3}
               className="rounded-lg px-3 py-2 text-sm"
               autoFocus
             />
+
+            {files.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowFilePicker((prev) => !prev)}
+                  className="text-xs text-muted transition-colors hover:text-accent"
+                >
+                  {selectedFileIds.size}/{files.length} reference files selected
+                </button>
+                {showFilePicker && (
+                  <div className="mt-2 flex max-h-32 flex-col gap-1 overflow-y-auto rounded-lg border border-border bg-background/60 p-2">
+                    {files.map((file) => (
+                      <label key={file.id} className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={selectedFileIds.has(file.id)}
+                          onChange={() => toggleFile(file.id)}
+                        />
+                        {file.filename}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
               <Button
                 variant="ghost"
                 onClick={() => {
-                  setRewriteModalOpen(false);
-                  setRewriteInstruction("");
+                  setComposeModalOpen(false);
+                  setComposeInstruction("");
                 }}
               >
                 Cancel
               </Button>
-              <Button onClick={handleRewrite} disabled={!rewriteInstruction.trim()}>
-                Rewrite
+              <Button
+                onClick={handleCompose}
+                disabled={mode === "rewrite" && !composeInstruction.trim()}
+              >
+                {mode === "write" ? "Write" : "Rewrite"}
               </Button>
             </div>
           </div>

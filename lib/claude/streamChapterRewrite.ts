@@ -20,6 +20,7 @@ export async function streamChapterRewrite(params: {
   chapterTitle: string;
   currentContent: string;
   instruction: string;
+  referenceFilesText?: string | null;
 }) {
   const contextParts = [
     `Book title: ${params.projectTitle}`,
@@ -28,6 +29,9 @@ export async function streamChapterRewrite(params: {
     params.planningDocs.length > 0 ? renderPlanningDocsBlock(params.planningDocs) : "",
     params.otherChapters.length > 0
       ? `--- Rest of the manuscript (for context/continuity only) ---\n${renderManuscriptSoFarBlock(params.otherChapters)}`
+      : "",
+    params.referenceFilesText
+      ? `--- Reference documents (for context/facts only - do not copy verbatim) ---\n${params.referenceFilesText}`
       : "",
   ].filter(Boolean);
 

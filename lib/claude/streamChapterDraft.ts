@@ -19,6 +19,7 @@ export async function streamChapterDraft(params: {
   chapterOrder: number;
   chapterTitle: string;
   instruction: string | null;
+  referenceFilesText?: string | null;
 }) {
   const contextParts = [
     `Book title: ${params.projectTitle}`,
@@ -27,6 +28,9 @@ export async function streamChapterDraft(params: {
     params.planningDocs.length > 0 ? renderPlanningDocsBlock(params.planningDocs) : "",
     params.priorChapters.length > 0
       ? `--- Manuscript so far ---\n${renderManuscriptSoFarBlock(params.priorChapters)}`
+      : "",
+    params.referenceFilesText
+      ? `--- Reference documents (for context/facts only - do not copy verbatim) ---\n${params.referenceFilesText}`
       : "",
   ].filter(Boolean);
 

@@ -1,9 +1,16 @@
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { streamChapterDraft } from "@/lib/claude/streamChapterDraft";
+import { renderReferenceFilesBlock } from "@/lib/claude/promptBuilder";
 import { classifyStopReason, encodeStreamTrailer } from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
+
+const bodySchema = z.object({
+  instruction: z.string().max(2000).optional(),
+  fileIds: z.array(z.string()).optional(),
+});
 
 export async function POST(
   req: Request,
@@ -13,8 +20,9 @@ export async function POST(
   const userId = await requireUserId();
   const project = await getOwnedProject(projectId, userId);
 
-  const body = await req.json().catch(() => ({}));
-  const instruction = typeof body?.instruction === "string" ? body.instruction.trim() : "";
+  const parsedBody = bodySchema.safeParse(await req.json().catch(() => ({})));
+  const instruction = parsedBody.success ? (parsedBody.data.instruction ?? "").trim() : "";
+  const fileIds = parsedBody.success ? parsedBody.data.fileIds : undefined;
 
   const chapter = await prisma.chapter.findFirst({ where: { id: chapterId, projectId } });
   if (!chapter) {
@@ -24,12 +32,15 @@ export async function POST(
     });
   }
 
-  const [planningDocs, priorChapters] = await Promise.all([
+  const [planningDocs, priorChapters, referenceFiles] = await Promise.all([
     prisma.planningDocument.findMany({ where: { projectId } }),
     prisma.chapter.findMany({
       where: { projectId, order: { lt: chapter.order } },
       orderBy: { order: "asc" },
     }),
+    fileIds && fileIds.length > 0
+      ? prisma.manuscriptFile.findMany({ where: { projectId, id: { in: fileIds } } })
+      : Promise.resolve([]),
   ]);
 
   let full = "";
@@ -47,6 +58,7 @@ export async function POST(
           chapterOrder: chapter.order,
           chapterTitle: chapter.title,
           instruction: instruction || null,
+          referenceFilesText: renderReferenceFilesBlock(referenceFiles) || null,
         });
 
         for await (const chunk of stream) {
