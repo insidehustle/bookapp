@@ -1,24 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma, PlanningDocType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 
-export async function updatePlanningDocContent(
+/**
+ * Creates or updates a Story Bible doc directly from author-typed content -
+ * no AI generation required. Keyed by (projectId, type), matching the
+ * @@unique constraint, so it works whether or not a doc already exists yet.
+ */
+export async function saveStoryBibleContent(
   projectId: string,
-  docId: string,
+  type: PlanningDocType,
   content: string,
 ) {
   const userId = await requireUserId();
   await getOwnedProject(projectId, userId);
 
-  const doc = await prisma.planningDocument.findFirst({
-    where: { id: docId, projectId },
+  const doc = await prisma.planningDocument.upsert({
+    where: { projectId_type: { projectId, type } },
+    create: { projectId, type, content, data: {} as Prisma.InputJsonValue },
+    update: { content },
   });
-  if (!doc) {
-    throw new Error("Planning document not found.");
-  }
 
-  await prisma.planningDocument.update({ where: { id: docId }, data: { content } });
-  revalidatePath(`/projects/${projectId}/planning`);
+  revalidatePath(`/projects/${projectId}/story-bible/${type}`);
+  return doc;
 }

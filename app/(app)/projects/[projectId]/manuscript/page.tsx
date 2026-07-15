@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { Card } from "@/components/ui/Card";
@@ -10,7 +11,7 @@ export default async function ManuscriptPage({
 }) {
   const { projectId } = await params;
   const userId = await requireUserId();
-  await getOwnedProject(projectId, userId);
+  const project = await getOwnedProject(projectId, userId);
 
   const chapters = await prisma.chapter.findMany({
     where: { projectId },
@@ -18,7 +19,13 @@ export default async function ManuscriptPage({
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-8">
+      <Link
+        href={`/projects/${projectId}`}
+        className="w-fit text-xs text-muted transition-colors hover:text-accent"
+      >
+        ← Back to {project.title}
+      </Link>
       <h1 className="text-2xl font-semibold">Manuscript</h1>
       <FeedbackPanel projectId={projectId} />
 

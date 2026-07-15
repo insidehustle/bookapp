@@ -8,6 +8,7 @@ export async function reviseSelection(params: {
   fullContext: string;
   selectedText: string;
   instruction: string;
+  referenceFilesText?: string | null;
 }): Promise<string> {
   const response = await gemini.models.generateContent({
     model: selectModel("SELECTION_REVISE"),
@@ -20,6 +21,9 @@ export async function reviseSelection(params: {
               "Full document (for context only - do not revise anything outside the highlighted passage):",
               params.fullContext,
               "",
+              ...(params.referenceFilesText
+                ? ["Reference documents (for context/facts only - do not copy verbatim):", params.referenceFilesText, ""]
+                : []),
               "Highlighted passage to revise:",
               `"""${params.selectedText}"""`,
               "",

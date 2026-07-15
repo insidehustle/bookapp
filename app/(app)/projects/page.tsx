@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/authz";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { DeleteProjectButton } from "./DeleteProjectButton";
 
 export default async function ProjectsPage() {
   const userId = await requireUserId();
@@ -29,15 +30,16 @@ export default async function ProjectsPage() {
         <ul className="flex flex-col gap-3">
           {projects.map((project) => (
             <li key={project.id}>
-              <Link href={`/projects/${project.id}/files`}>
-                <Card className="flex items-center justify-between transition-colors hover:border-accent">
-                  <div>
-                    <div className="font-medium">{project.title}</div>
-                    <div className="text-xs text-muted">{project.genre ?? "No genre set"}</div>
-                  </div>
+              <Card className="flex items-center justify-between transition-colors hover:border-accent">
+                <Link href={`/projects/${project.id}`} className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{project.title}</div>
+                  <div className="text-xs text-muted">{project.genre ?? "No genre set"}</div>
+                </Link>
+                <div className="flex items-center gap-4">
                   <Badge>{project.status}</Badge>
-                </Card>
-              </Link>
+                  <DeleteProjectButton projectId={project.id} projectTitle={project.title} />
+                </div>
+              </Card>
             </li>
           ))}
         </ul>

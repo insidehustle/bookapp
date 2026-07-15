@@ -48,6 +48,25 @@ export class ClaudeTruncatedError extends Error {
   }
 }
 
+/**
+ * Shared catch-all for non-streaming API routes. Maps our two known error
+ * types to a friendly message; anything else (a raw Gemini SDK error - bad
+ * API key, network failure, rate limit, etc.) is logged server-side and
+ * turned into a generic, still-valid-JSON response instead of crashing the
+ * route and leaving the client trying to parse an empty/HTML error body.
+ */
+export function toApiErrorResponse(error: unknown): { message: string; status: number } {
+  if (error instanceof ClaudeRefusalError || error instanceof ClaudeTruncatedError) {
+    return { message: error.message, status: 422 };
+  }
+  console.error("AI request failed:", error);
+  return {
+    message:
+      "The AI request failed unexpectedly. This is often a missing/invalid GEMINI_API_KEY or a network issue - check the server logs for details.",
+    status: 502,
+  };
+}
+
 // Streaming trailer: shared framing so every streaming route can signal a
 // non-"ok" outcome (refusal/truncation) after the text stream closes,
 // without a separate SSE event system. This token is vanishingly unlikely

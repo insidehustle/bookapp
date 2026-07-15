@@ -23,3 +23,13 @@ export function renderManuscriptSoFarBlock(chapters: Chapter[]): string {
     .map((chapter) => `### Chapter ${chapter.order}: ${chapter.title}\n${chapter.content}`)
     .join("\n\n");
 }
+
+export function renderReferenceFilesBlock(
+  files: { filename: string; extractedText: string }[],
+): string {
+  const ordered = [...files].sort((a, b) => a.filename.localeCompare(b.filename));
+  if (ordered.length === 0) return "";
+  return ordered
+    .map((file) => `### ${file.filename}\n${file.extractedText}`)
+    .join("\n\n");
+}

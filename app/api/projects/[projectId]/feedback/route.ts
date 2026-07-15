@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { generateFeedback } from "@/lib/claude/generateFeedback";
-import { ClaudeRefusalError, ClaudeTruncatedError } from "@/lib/claude/errors";
+import { toApiErrorResponse } from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
 
@@ -42,9 +42,7 @@ export async function POST(
     });
     return NextResponse.json({ feedback });
   } catch (error) {
-    if (error instanceof ClaudeRefusalError || error instanceof ClaudeTruncatedError) {
-      return NextResponse.json({ error: error.message }, { status: 422 });
-    }
-    throw error;
+    const { message, status } = toApiErrorResponse(error);
+    return NextResponse.json({ error: message }, { status });
   }
 }

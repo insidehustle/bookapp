@@ -1,21 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import type { PlanningDocument } from "@prisma/client";
 import { extractStreamTrailer } from "@/lib/claude/errors";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Markdown } from "@/components/Markdown";
 
 type Message = { id: string; role: "USER" | "ASSISTANT"; content: string };
 
-export function ChatPanel({
-  projectId,
-  initialMessages,
-}: {
+type Props = {
   projectId: string;
   initialMessages: Message[];
-}) {
+  onFinalized: (doc: PlanningDocument) => void;
+};
+
+export function StyleInterviewPanel({ projectId, initialMessages, onFinalized }: Props) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function sendMessage(text: string) {
@@ -29,7 +33,7 @@ export function ChatPanel({
     setInput("");
 
     try {
-      const response = await fetch(`/api/projects/${projectId}/chat`, {
+      const response = await fetch(`/api/projects/${projectId}/style-interview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
@@ -37,7 +41,7 @@ export function ChatPanel({
 
       if (!response.ok || !response.body) {
         const responseBody = await response.json().catch(() => null);
-        throw new Error(responseBody?.error ?? "The message failed to send.");
+        throw new Error(responseBody?.error ?? "The interview turn failed.");
       }
 
       const reader = response.body.getReader();
@@ -62,24 +66,44 @@ export function ChatPanel({
         );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The message failed to send.");
+      setError(err instanceof Error ? err.message : "The interview turn failed.");
       setMessages((prev) => prev.filter((m) => m.id !== assistantId));
     } finally {
       setIsSending(false);
     }
   }
 
+  async function handleFinalize() {
+    setIsFinalizing(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/style-interview/finalize`, {
+        method: "POST",
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body?.error ?? "Finalizing failed.");
+      }
+      onFinalized(body.doc as PlanningDocument);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Finalizing failed.");
+    } finally {
+      setIsFinalizing(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="text-2xl font-semibold">Chat</h1>
+    <Card className="flex flex-col gap-3">
+      <h2 className="font-medium">Style Interview</h2>
       <p className="text-xs text-muted">
-        Open-ended chat about your project — ask questions, think out loud,
-        get a second opinion. Grounded in your planning docs and manuscript.
+        A quick back-and-forth about tone, pacing, voice, and what to preserve
+        or change — Claude turns this into a style brief that guides every
+        draft, rewrite, and polish pass.
       </p>
 
-      <div className="flex min-h-[24rem] flex-col gap-2 overflow-y-auto rounded-xl border border-border bg-surface/70 p-3 backdrop-blur-sm">
+      <div className="flex max-h-80 flex-col gap-2 overflow-y-auto rounded-lg border border-border bg-background/60 p-3">
         {messages.length === 0 && (
-          <p className="text-sm text-muted">Say hello to start chatting.</p>
+          <p className="text-sm text-muted">Say hello to start the interview.</p>
         )}
         {messages.map((message) => (
           <div
@@ -90,7 +114,7 @@ export function ChatPanel({
                 : "self-start border border-border bg-surface-2"
             }`}
           >
-            {message.content || "…"}
+            {message.content ? <Markdown content={message.content} /> : "…"}
           </div>
         ))}
       </div>
@@ -107,13 +131,22 @@ export function ChatPanel({
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Ask anything about your project..."
+          placeholder="Type your answer or question..."
           className="flex-1 rounded-lg px-3 py-2 text-sm"
         />
         <Button type="submit" disabled={isSending || !input.trim()}>
           Send
         </Button>
       </form>
-    </div>
+
+      <Button
+        variant="secondary"
+        onClick={handleFinalize}
+        disabled={isFinalizing || messages.length === 0}
+        className="w-fit px-3 py-1.5 text-xs"
+      >
+        {isFinalizing ? "Finalizing…" : "Finalize style brief"}
+      </Button>
+    </Card>
   );
 }

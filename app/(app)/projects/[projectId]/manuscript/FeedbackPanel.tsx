@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Feedback } from "@/lib/claude/schemas";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Markdown } from "@/components/Markdown";
 
 export function FeedbackPanel({ projectId }: { projectId: string }) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -49,12 +50,16 @@ export function FeedbackPanel({ projectId }: { projectId: string }) {
       {error && <p className="text-sm text-danger">{error}</p>}
       {feedback && (
         <div className="flex flex-col gap-3 text-sm">
-          <p className="text-foreground/90">{feedback.overallImpression}</p>
+          <div className="text-foreground/90">
+            <Markdown content={feedback.overallImpression} inline />
+          </div>
           <div>
             <p className="font-medium text-accent-2">Strengths</p>
             <ul className="list-inside list-disc text-foreground/80">
               {feedback.strengths.map((strength, index) => (
-                <li key={index}>{strength}</li>
+                <li key={index}>
+                  <Markdown content={strength} inline />
+                </li>
               ))}
             </ul>
           </div>
@@ -64,8 +69,10 @@ export function FeedbackPanel({ projectId }: { projectId: string }) {
               {feedback.suggestions.map((suggestion, index) => (
                 <li key={index} className="rounded-lg border border-border bg-background/60 p-2">
                   <span className="font-medium">{suggestion.area}:</span>{" "}
-                  {suggestion.issue}{" "}
-                  <span className="text-muted">→ {suggestion.suggestion}</span>
+                  <Markdown content={suggestion.issue} inline />{" "}
+                  <span className="text-muted">
+                    → <Markdown content={suggestion.suggestion} inline />
+                  </span>
                 </li>
               ))}
             </ul>

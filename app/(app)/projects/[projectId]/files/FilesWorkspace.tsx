@@ -83,7 +83,8 @@ export function FilesWorkspace({ projectId, initialFiles }: Props) {
       if (!response.ok) {
         throw new Error(body?.error ?? "Generating chapters failed.");
       }
-      setGenerateMessage(`Created ${body.chapterCount} chapter(s) — check the Chapters tab.`);
+      setGenerateMessage(`Created ${body.chapterCount} chapter(s) — opening your project…`);
+      router.push(`/projects/${projectId}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generating chapters failed.");

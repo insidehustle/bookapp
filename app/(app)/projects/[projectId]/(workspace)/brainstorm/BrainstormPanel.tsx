@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Markdown } from "@/components/Markdown";
 
 export function BrainstormPanel({ projectId }: { projectId: string }) {
   const [prompt, setPrompt] = useState("");
@@ -57,7 +58,7 @@ export function BrainstormPanel({ projectId }: { projectId: string }) {
           {ideas.map((idea, index) => (
             <li key={index} className="flex gap-2">
               <span className="font-mono text-accent-2">{`0${index + 1}`.slice(-2)}</span>
-              {idea}
+              <Markdown content={idea} inline />
             </li>
           ))}
         </ul>

@@ -5,13 +5,18 @@ import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { generatePlanningDoc } from "@/lib/claude/generatePlanningDoc";
 import { renderPlanningDocMarkdown } from "@/lib/claude/schemas";
-import { ClaudeRefusalError, ClaudeTruncatedError } from "@/lib/claude/errors";
+import { toApiErrorResponse } from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
   type: z.enum(["REFERENCE_PLOT", "CHARACTER_PROFILES", "STORY_STRUCTURE"]),
   notes: z.string().max(4000).optional(),
+  // Which uploaded files to ground this generation in. Omitted = use every
+  // file in the project (back-compat default); an explicit array (including
+  // empty) is honored exactly, so the author can generate from a subset or
+  // from no files at all.
+  fileIds: z.array(z.string()).optional(),
 });
 
 export async function POST(
@@ -22,12 +27,12 @@ export async function POST(
   const userId = await requireUserId();
   const project = await getOwnedProject(projectId, userId);
 
-  const { type, notes } = bodySchema.parse(await req.json());
+  const { type, notes, fileIds } = bodySchema.parse(await req.json());
 
   const [existingDocs, manuscriptFiles] = await Promise.all([
     prisma.planningDocument.findMany({ where: { projectId, type: { not: type } } }),
     prisma.manuscriptFile.findMany({
-      where: { projectId },
+      where: { projectId, ...(fileIds ? { id: { in: fileIds } } : {}) },
       orderBy: { createdAt: "asc" },
     }),
   ]);
@@ -49,13 +54,8 @@ export async function POST(
       userNotes: notes ?? null,
     });
   } catch (error) {
-    if (error instanceof ClaudeRefusalError) {
-      return NextResponse.json({ error: error.message }, { status: 422 });
-    }
-    if (error instanceof ClaudeTruncatedError) {
-      return NextResponse.json({ error: error.message }, { status: 422 });
-    }
-    throw error;
+    const { message, status } = toApiErrorResponse(error);
+    return NextResponse.json({ error: message }, { status });
   }
 
   const content = renderPlanningDocMarkdown(data);

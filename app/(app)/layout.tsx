@@ -10,22 +10,27 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen">
-      <header className="flex items-center justify-between border-b border-border bg-surface/60 px-6 py-3 backdrop-blur-sm">
-        <Link href="/projects" className="flex items-center gap-2 font-semibold">
-          <span className="h-2 w-2 rounded-full bg-accent shadow-[0_0_10px_2px_var(--accent)]" />
-          <span className="bg-gradient-to-r from-foreground to-accent bg-clip-text text-transparent">
+      <header className="flex items-center justify-between gap-3 border-b border-border bg-surface/60 px-4 py-3 backdrop-blur-sm sm:px-6">
+        <Link href="/projects" className="flex min-w-0 items-center gap-2 font-semibold">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-accent shadow-[0_0_10px_2px_var(--accent)]" />
+          <span className="truncate bg-gradient-to-r from-foreground to-accent bg-clip-text text-transparent">
             Book Writing Assistant
           </span>
         </Link>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="font-mono text-xs text-muted">{session?.user?.email}</span>
+        <div className="flex shrink-0 items-center gap-3 text-sm sm:gap-4">
+          <span className="hidden truncate font-mono text-xs text-muted sm:inline">
+            {session?.user?.email}
+          </span>
           <form
             action={async () => {
               "use server";
               await signOut({ redirectTo: "/" });
             }}
           >
-            <button type="submit" className="text-muted transition-colors hover:text-accent">
+            <button
+              type="submit"
+              className="py-1 text-muted transition-colors hover:text-accent"
+            >
               Sign out
             </button>
           </form>

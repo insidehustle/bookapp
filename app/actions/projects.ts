@@ -26,7 +26,7 @@ export async function createProject(formData: FormData) {
     data: { ...parsed, userId },
   });
 
-  redirect(`/projects/${project.id}/files`);
+  redirect(`/projects/${project.id}`);
 }
 
 const updateProjectSchema = z.object({

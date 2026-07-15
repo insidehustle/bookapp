@@ -3,15 +3,22 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { reviseSelection } from "@/lib/claude/reviseSelection";
-import { ClaudeRefusalError, ClaudeTruncatedError } from "@/lib/claude/errors";
+import { renderReferenceFilesBlock } from "@/lib/claude/promptBuilder";
+import { toApiErrorResponse } from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
 
-const bodySchema = z.object({
-  planningDocId: z.string(),
-  selectedText: z.string().min(1),
-  instruction: z.string().min(1).max(2000),
-});
+const bodySchema = z
+  .object({
+    planningDocId: z.string().optional(),
+    chapterId: z.string().optional(),
+    selectedText: z.string().min(1),
+    instruction: z.string().min(1).max(2000),
+    fileIds: z.array(z.string()).optional(),
+  })
+  .refine((data) => Boolean(data.planningDocId) !== Boolean(data.chapterId), {
+    message: "Provide exactly one of planningDocId or chapterId.",
+  });
 
 export async function POST(
   req: Request,
@@ -21,32 +28,33 @@ export async function POST(
   const userId = await requireUserId();
   await getOwnedProject(projectId, userId);
 
-  const { planningDocId, selectedText, instruction } = bodySchema.parse(await req.json());
+  const { planningDocId, chapterId, selectedText, instruction, fileIds } = bodySchema.parse(
+    await req.json(),
+  );
 
-  const doc = await prisma.planningDocument.findFirst({
-    where: { id: planningDocId, projectId },
-  });
-  if (!doc) {
+  const [source, referenceFiles] = await Promise.all([
+    planningDocId
+      ? prisma.planningDocument.findFirst({ where: { id: planningDocId, projectId } })
+      : prisma.chapter.findFirst({ where: { id: chapterId, projectId } }),
+    fileIds && fileIds.length > 0
+      ? prisma.manuscriptFile.findMany({ where: { projectId, id: { in: fileIds } } })
+      : Promise.resolve([]),
+  ]);
+
+  if (!source) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
-  }
-  if (!doc.content.includes(selectedText)) {
-    return NextResponse.json(
-      { error: "Selected text no longer matches the current content — reload and try again." },
-      { status: 409 },
-    );
   }
 
   try {
     const replacement = await reviseSelection({
-      fullContext: doc.content,
+      fullContext: source.content,
       selectedText,
       instruction,
+      referenceFilesText: renderReferenceFilesBlock(referenceFiles) || null,
     });
     return NextResponse.json({ replacement });
   } catch (error) {
-    if (error instanceof ClaudeRefusalError || error instanceof ClaudeTruncatedError) {
-      return NextResponse.json({ error: error.message }, { status: 422 });
-    }
-    throw error;
+    const { message, status } = toApiErrorResponse(error);
+    return NextResponse.json({ error: message }, { status });
   }
 }
