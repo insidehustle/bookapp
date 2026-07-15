@@ -24,8 +24,8 @@ export default async function WorkspaceLayout({
     <WorkspaceShell
       projectTitle={project.title}
       projectStatus={project.status}
-      sidebar={<WorkspaceSidebar projectId={projectId} chapters={chapters} />}
-      chat={<ChatPanel projectId={projectId} initialMessages={chatMessages} />}
+      sidebar={<WorkspaceSidebar key="sidebar" projectId={projectId} chapters={chapters} />}
+      chat={<ChatPanel key="chat" projectId={projectId} initialMessages={chatMessages} />}
     >
       {children}
     </WorkspaceShell>
