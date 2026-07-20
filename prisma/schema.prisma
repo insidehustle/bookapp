@@ -19,6 +19,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   projects      Project[]
+  voices        Voice[]
   createdAt     DateTime  @default(now())
 }
 
@@ -75,6 +76,8 @@ model Project {
   genre           String?
   targetWordCount Int?
   status          ProjectStatus @default(PLANNING)
+  voiceId         String?
+  voice           Voice?        @relation(fields: [voiceId], references: [id], onDelete: SetNull)
 
   planningDocs      PlanningDocument[]
   chapters          Chapter[]
@@ -87,6 +90,7 @@ model Project {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([voiceId])
 }
 
 enum PlanningDocType {
@@ -204,4 +208,79 @@ model ManuscriptEditRun {
   createdAt DateTime    @default(now())
 
   @@index([projectId])
+}
+
+enum VoiceSampleSource {
+  MANUAL
+  SAVED_FROM_CHAPTER
+}
+
+// A persistent, cross-project writing-style profile - unlike everything else
+// in this schema, scoped directly to User rather than through a Project, so
+// it can be reused across any number of books. Projects attach one Voice
+// optionally (Project.voiceId); the Voice itself is unaffected by deleting
+// any project that used it.
+model Voice {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?  @db.Text
+  data        Json
+  content     String   @db.Text
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  versions          VoiceVersion[]
+  samples           VoiceSample[]
+  interviewMessages VoiceInterviewMessage[]
+  projects          Project[]
+
+  @@index([userId])
+}
+
+// Snapshot of a Voice's data/content taken immediately before each
+// overwrite, so edits and AI regenerations can be undone via restore.
+model VoiceVersion {
+  id        String   @id @default(cuid())
+  voiceId   String
+  voice     Voice    @relation(fields: [voiceId], references: [id], onDelete: Cascade)
+  version   Int
+  data      Json
+  content   String   @db.Text
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([voiceId, version])
+  @@index([voiceId, createdAt])
+}
+
+// Reference writing samples that ground AI generation/regeneration of a
+// Voice's Brain - either pasted in manually or saved from an existing
+// chapter written in that voice.
+model VoiceSample {
+  id        String            @id @default(cuid())
+  voiceId   String
+  voice     Voice             @relation(fields: [voiceId], references: [id], onDelete: Cascade)
+  label     String
+  content   String            @db.Text
+  source    VoiceSampleSource @default(MANUAL)
+  createdAt DateTime          @default(now())
+
+  @@index([voiceId, createdAt])
+}
+
+// The running chat transcript behind a Voice's creation interview - mirrors
+// StyleInterviewMessage's role in the project-scoped Style Interview, but
+// scoped to a Voice instead. Only its distilled result updates Voice.content.
+model VoiceInterviewMessage {
+  id        String      @id @default(cuid())
+  voiceId   String
+  voice     Voice       @relation(fields: [voiceId], references: [id], onDelete: Cascade)
+  role      MessageRole
+  content   String      @db.Text
+  createdAt DateTime    @default(now())
+
+  @@index([voiceId, createdAt])
 }

@@ -9,7 +9,15 @@ export async function reviseSelection(params: {
   selectedText: string;
   instruction: string;
   referenceFilesText?: string | null;
+  voiceContent?: string | null;
 }): Promise<string> {
+  const systemInstructionParts = [
+    "You are a precise line editor. The author has highlighted one exact passage inside a larger document and wants only that passage revised, per their instruction. Return only the replacement text for the highlighted passage - it will be spliced back into the document verbatim in place of the original, so match the surrounding voice and do not include any of the unchanged surrounding text.",
+    params.voiceContent
+      ? `--- Author's Voice (HIGHEST PRIORITY - this overrides any conflicting tone/style guidance elsewhere) ---\n${params.voiceContent}`
+      : "",
+  ].filter(Boolean);
+
   const response = await gemini.models.generateContent({
     model: selectModel("SELECTION_REVISE"),
     contents: [
@@ -34,8 +42,7 @@ export async function reviseSelection(params: {
       },
     ],
     config: {
-      systemInstruction:
-        "You are a precise line editor. The author has highlighted one exact passage inside a larger document and wants only that passage revised, per their instruction. Return only the replacement text for the highlighted passage - it will be spliced back into the document verbatim in place of the original, so match the surrounding voice and do not include any of the unchanged surrounding text.",
+      systemInstruction: systemInstructionParts.join("\n\n"),
       responseMimeType: "application/json",
       responseJsonSchema: z.toJSONSchema(SelectionReviseSchema),
     },

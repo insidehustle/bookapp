@@ -65,6 +65,21 @@ export const StyleBriefSchema = z.object({
 });
 export type StyleBrief = z.infer<typeof StyleBriefSchema>;
 
+export const VoiceBrainSchema = z.object({
+  tone: z.string().describe("Overall emotional register - e.g. wry, earnest, hard-boiled."),
+  vocabulary: z.string().describe("Preferred word choice, register, and vocabulary range."),
+  sentenceStructure: z.string().describe("Sentence length, rhythm, and structural patterns."),
+  pacing: z.string(),
+  personality: z.string().describe("The narrative personality/perspective that comes through."),
+  humor: z.string().describe("Humor level and style, or 'none' if not applicable."),
+  formality: z.string(),
+  culturalNuances: z.string().optional(),
+  quirks: z.array(z.string()).describe("Specific stylistic tics or signature moves to include."),
+  forbiddenPatterns: z.array(z.string()).describe("Words, phrases, or patterns to avoid."),
+  additionalNotes: z.string().optional(),
+});
+export type VoiceBrain = z.infer<typeof VoiceBrainSchema>;
+
 export const SelectionReviseSchema = z.object({
   replacement: z.string().describe("The revised text that replaces exactly the selected span."),
 });

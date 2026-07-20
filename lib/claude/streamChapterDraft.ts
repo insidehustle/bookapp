@@ -21,11 +21,15 @@ export async function streamChapterDraft(params: {
   instruction: string | null;
   referenceFilesText?: string | null;
   targetWordCount?: number | null;
+  voice?: { name: string; content: string } | null;
 }) {
   const contextParts = [
     `Book title: ${params.projectTitle}`,
     params.genre ? `Genre: ${params.genre}` : "",
     params.premise ? `Premise: ${params.premise}` : "",
+    params.voice
+      ? `--- Author's Voice (HIGHEST PRIORITY - this overrides any conflicting tone/style guidance elsewhere in this prompt, including the Style Brief below if present) ---\n${params.voice.content}`
+      : "",
     params.planningDocs.length > 0 ? renderPlanningDocsBlock(params.planningDocs) : "",
     params.priorChapters.length > 0
       ? `--- Manuscript so far ---\n${renderManuscriptSoFarBlock(params.priorChapters)}`

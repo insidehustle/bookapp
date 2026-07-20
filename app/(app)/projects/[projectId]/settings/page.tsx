@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { updateProject } from "@/app/actions/projects";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +14,7 @@ export default async function ProjectSettingsPage({
   const { projectId } = await params;
   const userId = await requireUserId();
   const project = await getOwnedProject(projectId, userId);
+  const voices = await prisma.voice.findMany({ where: { userId }, orderBy: { name: "asc" } });
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6 px-6 py-8">
@@ -73,6 +75,28 @@ export default async function ProjectSettingsPage({
             />
             <span className="text-xs text-muted">
               Used by &quot;Write the whole book&quot; to know when the manuscript is done.
+            </span>
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-muted">
+            Voice
+            <select
+              name="voiceId"
+              defaultValue={project.voiceId ?? "__none__"}
+              className="rounded-lg px-3 py-2"
+            >
+              <option value="__none__">No voice</option>
+              {voices.map((voice) => (
+                <option key={voice.id} value={voice.id}>
+                  {voice.name}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-muted">
+              When set, this voice&apos;s style guidelines take priority over everything else
+              when drafting, rewriting, or revising chapters.{" "}
+              <Link href="/voices" className="text-accent hover:underline">
+                Manage voices
+              </Link>
             </span>
           </label>
           <Button type="submit" className="mt-2 w-fit">

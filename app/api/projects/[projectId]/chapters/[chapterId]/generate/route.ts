@@ -34,7 +34,7 @@ export async function POST(
     });
   }
 
-  const [planningDocs, priorChapters, referenceFiles] = await Promise.all([
+  const [planningDocs, priorChapters, referenceFiles, voice] = await Promise.all([
     prisma.planningDocument.findMany({ where: { projectId } }),
     prisma.chapter.findMany({
       where: { projectId, order: { lt: chapter.order } },
@@ -43,6 +43,7 @@ export async function POST(
     fileIds && fileIds.length > 0
       ? prisma.manuscriptFile.findMany({ where: { projectId, id: { in: fileIds } } })
       : Promise.resolve([]),
+    project.voiceId ? prisma.voice.findUnique({ where: { id: project.voiceId } }) : Promise.resolve(null),
   ]);
 
   let full = "";
@@ -62,6 +63,7 @@ export async function POST(
           instruction: instruction || null,
           referenceFilesText: renderReferenceFilesBlock(referenceFiles) || null,
           targetWordCount: targetWordCount ?? null,
+          voice: voice ? { name: voice.name, content: voice.content } : null,
         });
 
         for await (const chunk of stream) {

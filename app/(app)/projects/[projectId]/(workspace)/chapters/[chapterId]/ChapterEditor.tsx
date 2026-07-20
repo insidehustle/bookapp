@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { Chapter, ManuscriptFile } from "@prisma/client";
+import type { Chapter, ManuscriptFile, Voice } from "@prisma/client";
 import { updateChapterContent, undoChapterContent } from "@/app/actions/chapters";
+import { saveChapterAsVoiceSample } from "@/app/actions/voices";
 import { extractStreamTrailer } from "@/lib/claude/errors";
 import { SelectableContent } from "@/components/SelectableContent";
 import { Button } from "@/components/ui/Button";
@@ -12,10 +13,12 @@ export function ChapterEditor({
   projectId,
   chapter,
   files,
+  voices,
 }: {
   projectId: string;
   chapter: Chapter;
   files: ManuscriptFile[];
+  voices: Voice[];
 }) {
   const [content, setContent] = useState(chapter.content);
   const [savedContent, setSavedContent] = useState(chapter.content);
@@ -27,6 +30,9 @@ export function ChapterEditor({
   const [composeInstruction, setComposeInstruction] = useState("");
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(() => new Set());
+  const [saveAsVoiceId, setSaveAsVoiceId] = useState(voices[0]?.id ?? "");
+  const [isSavingSample, setIsSavingSample] = useState(false);
+  const [sampleSavedMessage, setSampleSavedMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const mode: "write" | "rewrite" = content.trim() ? "rewrite" : "write";
@@ -124,6 +130,20 @@ export function ChapterEditor({
     }
   }
 
+  async function handleSaveAsVoiceSample() {
+    if (!saveAsVoiceId) return;
+    setIsSavingSample(true);
+    setSampleSavedMessage(null);
+    try {
+      await saveChapterAsVoiceSample(saveAsVoiceId, projectId, chapter.id);
+      setSampleSavedMessage("Saved to voice.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't save this chapter as a voice example.");
+    } finally {
+      setIsSavingSample(false);
+    }
+  }
+
   async function handleReviseSelection(params: {
     selectedText: string;
     instruction: string;
@@ -173,6 +193,29 @@ export function ChapterEditor({
           >
             {isUndoing ? "Undoing…" : "Undo last AI change"}
           </Button>
+        )}
+        {voices.length > 0 && content.trim() && (
+          <div className="flex items-center gap-1.5">
+            <select
+              value={saveAsVoiceId}
+              onChange={(event) => setSaveAsVoiceId(event.target.value)}
+              className="rounded-lg px-2 py-1 text-xs"
+            >
+              {voices.map((voice) => (
+                <option key={voice.id} value={voice.id}>
+                  {voice.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              variant="ghost"
+              onClick={handleSaveAsVoiceSample}
+              disabled={isSavingSample}
+              className="px-2 py-1 text-xs"
+            >
+              {isSavingSample ? "Saving…" : sampleSavedMessage ?? "Save as voice example"}
+            </Button>
+          </div>
         )}
         <div className="ml-auto">
           <Button

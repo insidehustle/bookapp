@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import type { Project } from "@prisma/client";
+import type { Project, Voice } from "@prisma/client";
 
 /**
  * Every route/action that touches a Project (or a child of one) must resolve
@@ -27,4 +27,18 @@ export async function getOwnedProject(
     notFound();
   }
   return project;
+}
+
+// Voice is the one resource in this app that isn't gated through a Project -
+// it's scoped directly to the User so it can be reused across any number of
+// books, so it gets its own ownership check rather than going through
+// getOwnedProject.
+export async function getOwnedVoice(voiceId: string, userId: string): Promise<Voice> {
+  const voice = await prisma.voice.findFirst({
+    where: { id: voiceId, userId },
+  });
+  if (!voice) {
+    notFound();
+  }
+  return voice;
 }

@@ -26,19 +26,20 @@ export async function POST(
 ) {
   const { projectId } = await params;
   const userId = await requireUserId();
-  await getOwnedProject(projectId, userId);
+  const project = await getOwnedProject(projectId, userId);
 
   const { planningDocId, chapterId, selectedText, instruction, fileIds } = bodySchema.parse(
     await req.json(),
   );
 
-  const [source, referenceFiles] = await Promise.all([
+  const [source, referenceFiles, voice] = await Promise.all([
     planningDocId
       ? prisma.planningDocument.findFirst({ where: { id: planningDocId, projectId } })
       : prisma.chapter.findFirst({ where: { id: chapterId, projectId } }),
     fileIds && fileIds.length > 0
       ? prisma.manuscriptFile.findMany({ where: { projectId, id: { in: fileIds } } })
       : Promise.resolve([]),
+    project.voiceId ? prisma.voice.findUnique({ where: { id: project.voiceId } }) : Promise.resolve(null),
   ]);
 
   if (!source) {
@@ -51,6 +52,7 @@ export async function POST(
       selectedText,
       instruction,
       referenceFilesText: renderReferenceFilesBlock(referenceFiles) || null,
+      voiceContent: voice?.content ?? null,
     });
     return NextResponse.json({ replacement });
   } catch (error) {

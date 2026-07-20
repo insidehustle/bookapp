@@ -11,13 +11,14 @@ export default async function ChapterEditorPage({
   const userId = await requireUserId();
   await getOwnedProject(projectId, userId);
 
-  const [chapter, files] = await Promise.all([
+  const [chapter, files, voices] = await Promise.all([
     prisma.chapter.findFirst({ where: { id: chapterId, projectId } }),
     prisma.manuscriptFile.findMany({ where: { projectId }, orderBy: { createdAt: "asc" } }),
+    prisma.voice.findMany({ where: { userId }, orderBy: { name: "asc" } }),
   ]);
   if (!chapter) {
     return <p className="text-sm text-muted">Chapter not found.</p>;
   }
 
-  return <ChapterEditor projectId={projectId} chapter={chapter} files={files} />;
+  return <ChapterEditor projectId={projectId} chapter={chapter} files={files} voices={voices} />;
 }

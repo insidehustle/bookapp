@@ -18,6 +18,9 @@ export default async function AppLayout({
           </span>
         </Link>
         <div className="flex shrink-0 items-center gap-3 text-sm sm:gap-4">
+          <Link href="/voices" className="text-muted transition-colors hover:text-accent">
+            Voices
+          </Link>
           <span className="hidden truncate font-mono text-xs text-muted sm:inline">
             {session?.user?.email}
           </span>

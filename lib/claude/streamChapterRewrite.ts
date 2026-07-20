@@ -21,11 +21,15 @@ export async function streamChapterRewrite(params: {
   currentContent: string;
   instruction: string;
   referenceFilesText?: string | null;
+  voice?: { name: string; content: string } | null;
 }) {
   const contextParts = [
     `Book title: ${params.projectTitle}`,
     params.genre ? `Genre: ${params.genre}` : "",
     params.premise ? `Premise: ${params.premise}` : "",
+    params.voice
+      ? `--- Author's Voice (HIGHEST PRIORITY - this overrides any conflicting tone/style guidance elsewhere in this prompt, including the Style Brief below if present) ---\n${params.voice.content}`
+      : "",
     params.planningDocs.length > 0 ? renderPlanningDocsBlock(params.planningDocs) : "",
     params.otherChapters.length > 0
       ? `--- Rest of the manuscript (for context/continuity only) ---\n${renderManuscriptSoFarBlock(params.otherChapters)}`
