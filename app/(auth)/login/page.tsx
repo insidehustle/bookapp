@@ -1,4 +1,5 @@
-import { signIn } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { auth, signIn } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
@@ -8,6 +9,11 @@ export default async function LoginPage({
   searchParams: Promise<{ callbackUrl?: string }>;
 }) {
   const { callbackUrl } = await searchParams;
+
+  const session = await auth();
+  if (session?.user) {
+    redirect(callbackUrl ?? "/projects");
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">

@@ -21,7 +21,7 @@ const SECTIONS = [
   { id: "voices", label: "4. Voices" },
   { id: "chapters", label: "5. Writing chapters" },
   { id: "whole-book", label: "6. Write the whole book" },
-  { id: "manuscript", label: "7. Manuscript, feedback & export" },
+  { id: "manuscript", label: "7. Manuscript, feedback, export & listen" },
   { id: "brainstorm", label: "8. Brainstorm" },
   { id: "chat", label: "9. Chat" },
   { id: "settings", label: "10. Settings" },
@@ -202,13 +202,33 @@ export default function TutorialPage() {
         </p>
       </Section>
 
-      <Section id="manuscript" icon={<ManuscriptIcon className={iconClass} />} title="7. Manuscript, feedback & export">
+      <Section id="manuscript" icon={<ManuscriptIcon className={iconClass} />} title="7. Manuscript, feedback, export & listen">
         <p>The <strong>Manuscript</strong> link (next to Files in the sidebar) shows the whole book on one page:</p>
         <ol>
           <li>Jump-nav across chapters at the top.</li>
           <li><strong>Get feedback</strong> — a read-only critique of strengths and suggestions; it never edits your chapters.</li>
           <li><strong>Export as Word (.docx)</strong> — downloads the full manuscript with real formatting (headings, bold, lists), ready to open in Word or Google Docs.</li>
         </ol>
+        <p>
+          <strong>Listen to it</strong> — a text-to-speech bar above the chapter list lets you:
+        </p>
+        <ol>
+          <li><strong>Play whole book</strong> — reads every chapter in order, back to back.</li>
+          <li><strong>Read chapter</strong> — a link on each chapter card reads just that one.</li>
+          <li>
+            <strong>Read aloud</strong> — highlight any text on the page and a floating bar appears
+            at the bottom to read just that selection.
+          </li>
+          <li>
+            <strong>Pause / Resume / Stop</strong> and a <strong>Speed</strong> control (0.75×–2×)
+            while something is playing, with a &quot;Reading: …&quot; indicator showing where you are.
+          </li>
+        </ol>
+        <p>
+          This uses your browser&apos;s built-in voice, so it&apos;s free and instant, but the
+          voice quality and options depend on your device — an optional premium AI voice is
+          planned for later.
+        </p>
       </Section>
 
       <Section id="brainstorm" icon={<BrainstormIcon className={iconClass} />} title="8. Brainstorm">
