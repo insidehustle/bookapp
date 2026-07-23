@@ -30,7 +30,7 @@ export default async function NewProjectPage({
           </label>
           <label className="flex flex-col gap-1 text-sm text-muted">
             Premise
-            <textarea name="premise" rows={5} maxLength={4000} className="rounded-lg px-3 py-2" />
+            <textarea name="premise" rows={8} maxLength={20000} className="rounded-lg px-3 py-2" />
           </label>
           <label className="flex flex-col gap-1 text-sm text-muted">
             Target word count

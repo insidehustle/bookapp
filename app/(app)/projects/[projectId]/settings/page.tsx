@@ -62,8 +62,8 @@ export default async function ProjectSettingsPage({
             Premise
             <textarea
               name="premise"
-              rows={5}
-              maxLength={4000}
+              rows={8}
+              maxLength={20000}
               defaultValue={project.premise ?? ""}
               className="rounded-lg px-3 py-2"
             />

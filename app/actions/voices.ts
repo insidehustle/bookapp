@@ -9,15 +9,20 @@ import { requireUserId, getOwnedVoice, getOwnedProject } from "@/lib/authz";
 
 const createVoiceSchema = z.object({
   name: z.string().min(1).max(200),
-  description: z.string().max(2000).optional(),
+  description: z.string().max(10000).optional(),
 });
 
 // Form actions have no try/catch boundary of their own - an uncaught
 // ZodError crashes the whole request into Next's generic "Application
 // error" page instead of showing the author a message, so every form
 // action here uses safeParse and redirects back with ?error= on failure.
+// Prefixing with the field name (issue.path) means a validation failure is
+// diagnosable from the message alone, without needing server logs.
 function firstIssueMessage(error: z.ZodError, fallback: string): string {
-  return error.issues[0]?.message || fallback;
+  const issue = error.issues[0];
+  if (!issue) return fallback;
+  const field = issue.path.join(".");
+  return field ? `${field}: ${issue.message}` : issue.message;
 }
 
 export async function createVoice(formData: FormData) {
@@ -39,19 +44,24 @@ export async function createVoice(formData: FormData) {
 
 const updateVoiceMetaSchema = z.object({
   name: z.string().min(1).max(200).optional(),
-  description: z.string().max(2000).optional(),
+  description: z.string().max(10000).optional(),
 });
 
 export async function updateVoiceMeta(voiceId: string, formData: FormData) {
   const userId = await requireUserId();
   await getOwnedVoice(voiceId, userId);
 
-  const parsed = updateVoiceMetaSchema.parse({
+  const result = updateVoiceMetaSchema.safeParse({
     name: formData.get("name") || undefined,
     description: formData.get("description") || undefined,
   });
+  if (!result.success) {
+    redirect(
+      `/voices/${voiceId}?error=${encodeURIComponent(firstIssueMessage(result.error, "Please check the form and try again."))}`,
+    );
+  }
 
-  await prisma.voice.update({ where: { id: voiceId }, data: parsed });
+  await prisma.voice.update({ where: { id: voiceId }, data: result.data });
   revalidatePath(`/voices/${voiceId}`);
   revalidatePath("/voices");
 }

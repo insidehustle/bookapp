@@ -5,10 +5,13 @@ import { VoiceBrainEditor } from "./VoiceBrainEditor";
 
 export default async function VoicePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ voiceId: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { voiceId } = await params;
+  const { error } = await searchParams;
   const userId = await requireUserId();
   const voice = await getOwnedVoice(voiceId, userId);
 
@@ -32,6 +35,7 @@ export default async function VoicePage({
         samples={samples}
         versions={versions}
         interviewMessages={interviewMessages}
+        error={error}
       />
     </div>
   );

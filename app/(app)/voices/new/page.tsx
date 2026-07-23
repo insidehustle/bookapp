@@ -30,7 +30,7 @@ export default async function NewVoicePage({
             <textarea
               name="description"
               rows={4}
-              maxLength={2000}
+              maxLength={10000}
               placeholder="What does this voice sound like? Who or what is it inspired by?"
               className="rounded-lg px-3 py-2"
             />

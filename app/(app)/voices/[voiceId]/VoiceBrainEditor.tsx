@@ -36,11 +36,13 @@ export function VoiceBrainEditor({
   samples,
   versions,
   interviewMessages,
+  error: metaError,
 }: {
   voice: Voice;
   samples: VoiceSample[];
   versions: VoiceVersion[];
   interviewMessages: InterviewMessage[];
+  error?: string;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -159,6 +161,7 @@ export function VoiceBrainEditor({
   return (
     <div className="flex flex-col gap-6">
       <Card className="flex flex-col gap-3">
+        {metaError && <p className="text-sm text-danger">{metaError}</p>}
         <form action={updateVoiceMeta.bind(null, voice.id)} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm text-muted">
             Name
@@ -175,7 +178,7 @@ export function VoiceBrainEditor({
             <textarea
               name="description"
               rows={2}
-              maxLength={2000}
+              maxLength={10000}
               defaultValue={voice.description ?? ""}
               className="rounded-lg px-3 py-2"
             />

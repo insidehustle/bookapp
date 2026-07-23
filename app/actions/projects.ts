@@ -21,7 +21,7 @@ function parseVoiceIdField(formData: FormData): string | null | undefined {
 
 const createProjectSchema = z.object({
   title: z.string().min(1).max(200),
-  premise: z.string().max(4000).optional(),
+  premise: z.string().max(20000).optional(),
   genre: z.string().max(120).optional(),
   targetWordCount: z.coerce.number().int().positive().optional(),
 });
@@ -29,9 +29,14 @@ const createProjectSchema = z.object({
 // Turns the first Zod issue into a short, author-facing message instead of
 // letting a ZodError escape the action uncaught - form actions have no
 // try/catch boundary of their own, so an uncaught throw here crashes the
-// whole request into Next's generic "Application error" page.
+// whole request into Next's generic "Application error" page. Prefixing
+// with the field name (issue.path) means a validation failure is
+// diagnosable from the message alone, without needing server logs.
 function firstIssueMessage(error: z.ZodError, fallback: string): string {
-  return error.issues[0]?.message || fallback;
+  const issue = error.issues[0];
+  if (!issue) return fallback;
+  const field = issue.path.join(".");
+  return field ? `${field}: ${issue.message}` : issue.message;
 }
 
 export async function createProject(formData: FormData) {
@@ -56,7 +61,7 @@ export async function createProject(formData: FormData) {
 
 const updateProjectSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  premise: z.string().max(4000).optional(),
+  premise: z.string().max(20000).optional(),
   genre: z.string().max(120).optional(),
   targetWordCount: z.coerce.number().int().positive().optional(),
 });
