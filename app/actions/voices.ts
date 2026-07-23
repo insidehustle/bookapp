@@ -12,15 +12,26 @@ const createVoiceSchema = z.object({
   description: z.string().max(2000).optional(),
 });
 
+// Form actions have no try/catch boundary of their own - an uncaught
+// ZodError crashes the whole request into Next's generic "Application
+// error" page instead of showing the author a message, so every form
+// action here uses safeParse and redirects back with ?error= on failure.
+function firstIssueMessage(error: z.ZodError, fallback: string): string {
+  return error.issues[0]?.message || fallback;
+}
+
 export async function createVoice(formData: FormData) {
   const userId = await requireUserId();
-  const parsed = createVoiceSchema.parse({
+  const result = createVoiceSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
   });
+  if (!result.success) {
+    redirect(`/voices/new?error=${encodeURIComponent(firstIssueMessage(result.error, "Please check the form and try again."))}`);
+  }
 
   const voice = await prisma.voice.create({
-    data: { ...parsed, userId, data: {} as Prisma.InputJsonValue, content: "" },
+    data: { ...result.data, userId, data: {} as Prisma.InputJsonValue, content: "" },
   });
 
   redirect(`/voices/${voice.id}`);

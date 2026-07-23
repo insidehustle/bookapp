@@ -8,10 +8,13 @@ import { Badge } from "@/components/ui/Badge";
 
 export default async function ProjectSettingsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ projectId: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { projectId } = await params;
+  const { error } = await searchParams;
   const userId = await requireUserId();
   const project = await getOwnedProject(projectId, userId);
   const voices = await prisma.voice.findMany({ where: { userId }, orderBy: { name: "asc" } });
@@ -34,6 +37,7 @@ export default async function ProjectSettingsPage({
       </p>
 
       <Card>
+        {error && <p className="mb-4 text-sm text-danger">{error}</p>}
         <form action={updateProject.bind(null, projectId)} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm text-muted">
             Title
