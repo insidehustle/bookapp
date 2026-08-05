@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useTransition } from "react";
 import type { Chapter } from "@prisma/client";
-import { createChapter } from "@/app/actions/chapters";
+import { createChapter, deleteChapter, deleteChapterSilent } from "@/app/actions/chapters";
+import { TrashIcon } from "@/components/icons";
 import { useWorkspaceDrawer } from "./WorkspaceDrawerContext";
 
 const STORY_BIBLE_ITEMS = [
@@ -22,6 +24,26 @@ export function WorkspaceSidebar({
 }) {
   const pathname = usePathname();
   const { closeSidebar } = useWorkspaceDrawer();
+  const [, startTransition] = useTransition();
+  const [deletingChapterId, setDeletingChapterId] = useState<string | null>(null);
+
+  function handleDeleteChapter(chapter: Chapter, isActive: boolean) {
+    if (
+      !window.confirm(
+        `Delete "Chapter ${chapter.order}: ${chapter.title}"? This permanently deletes its content and can't be undone.`,
+      )
+    ) {
+      return;
+    }
+    setDeletingChapterId(chapter.id);
+    startTransition(() => {
+      if (isActive) {
+        deleteChapter(projectId, chapter.id);
+      } else {
+        deleteChapterSilent(projectId, chapter.id).finally(() => setDeletingChapterId(null));
+      }
+    });
+  }
 
   return (
     <aside className="flex w-full shrink-0 flex-col gap-6 overflow-y-auto px-4 py-6 lg:w-64 lg:border-r lg:border-border">
@@ -68,19 +90,30 @@ export function WorkspaceSidebar({
           {chapters.map((chapter) => {
             const href = `/projects/${projectId}/chapters/${chapter.id}`;
             const isActive = pathname === href;
+            const isDeleting = deletingChapterId === chapter.id;
             return (
-              <Link
-                key={chapter.id}
-                href={href}
-                onClick={closeSidebar}
-                className={`truncate rounded-md px-2 py-2 text-sm transition-colors ${
-                  isActive
-                    ? "bg-accent/10 text-accent shadow-[inset_0_0_0_1px_rgba(124,92,255,0.3)]"
-                    : "text-muted hover:bg-surface hover:text-foreground"
-                }`}
-              >
-                {chapter.order}. {chapter.title}
-              </Link>
+              <div key={chapter.id} className="flex items-center gap-1">
+                <Link
+                  href={href}
+                  onClick={closeSidebar}
+                  className={`min-w-0 flex-1 truncate rounded-md px-2 py-2 text-sm transition-colors ${
+                    isActive
+                      ? "bg-accent/10 text-accent shadow-[inset_0_0_0_1px_rgba(124,92,255,0.3)]"
+                      : "text-muted hover:bg-surface hover:text-foreground"
+                  }`}
+                >
+                  {chapter.order}. {chapter.title}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteChapter(chapter, isActive)}
+                  disabled={isDeleting}
+                  aria-label={`Delete Chapter ${chapter.order}: ${chapter.title}`}
+                  className="shrink-0 rounded-md p-1.5 text-muted transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
             );
           })}
         </nav>

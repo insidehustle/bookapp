@@ -59,6 +59,24 @@ export async function deleteChapter(projectId: string, chapterId: string) {
   redirect(`/projects/${projectId}`);
 }
 
+/**
+ * Same deletion logic as deleteChapter, but skips the redirect - used when
+ * deleting a chapter that isn't the one currently open (e.g. from the
+ * sidebar), where navigating away would be unwanted.
+ */
+export async function deleteChapterSilent(projectId: string, chapterId: string) {
+  const userId = await requireUserId();
+  await getOwnedProject(projectId, userId);
+
+  const chapter = await prisma.chapter.findFirst({ where: { id: chapterId, projectId } });
+  if (!chapter) {
+    throw new Error("Chapter not found.");
+  }
+
+  await prisma.chapter.delete({ where: { id: chapterId } });
+  revalidatePath(`/projects/${projectId}`);
+}
+
 export async function undoChapterContent(projectId: string, chapterId: string) {
   const userId = await requireUserId();
   await getOwnedProject(projectId, userId);
