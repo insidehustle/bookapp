@@ -5,22 +5,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Chapter } from "@prisma/client";
 import { createChapterSilent } from "@/app/actions/chapters";
-import { extractStreamTrailer } from "@/lib/claude/errors";
+import { extractStreamTrailer, describeStreamOutcome } from "@/lib/claude/errors";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-const TARGET_WORDS_PER_CHAPTER = 2500;
 const MAX_ITERATIONS = 80;
 
 type ChapterState = { id: string; order: number; title: string; content: string; wordCount: number };
 
 export function WriteWholeBookPanel({
   projectId,
-  targetWordCount,
+  targetChapterCount,
+  targetWordsPerChapter,
   initialChapters,
 }: {
   projectId: string;
-  targetWordCount: number | null;
+  targetChapterCount: number | null;
+  targetWordsPerChapter: number | null;
   initialChapters: Chapter[];
 }) {
   const router = useRouter();
@@ -32,6 +33,8 @@ export function WriteWholeBookPanel({
   const [error, setError] = useState<string | null>(null);
   const stopRequested = useRef(false);
 
+  const hasTarget = Boolean(targetChapterCount && targetWordsPerChapter);
+  const targetWordCount = hasTarget ? targetChapterCount! * targetWordsPerChapter! : null;
   const totalWords = chapters.reduce((sum, c) => sum + c.wordCount, 0);
   const progressPct = targetWordCount
     ? Math.min(100, Math.round((totalWords / targetWordCount) * 100))
@@ -46,7 +49,7 @@ export function WriteWholeBookPanel({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        targetWordCount: Math.min(wordsRemaining, TARGET_WORDS_PER_CHAPTER),
+        targetWordCount: Math.min(wordsRemaining, targetWordsPerChapter!),
       }),
     });
     if (!response.ok || !response.body) {
@@ -65,11 +68,7 @@ export function WriteWholeBookPanel({
 
     const { text, outcome } = extractStreamTrailer(full);
     if (outcome && outcome.type !== "ok") {
-      throw new Error(
-        outcome.type === "refusal"
-          ? `Chapter ${chapter.order} was declined by the model.`
-          : `Chapter ${chapter.order}'s response was cut off.`,
-      );
+      throw new Error(`Chapter ${chapter.order}: ${describeStreamOutcome(outcome)}`);
     }
     return text;
   }
@@ -123,7 +122,7 @@ export function WriteWholeBookPanel({
       <Card className="flex flex-col gap-2">
         <h2 className="font-medium">Write the whole book</h2>
         <p className="text-sm text-muted">
-          Set a target word count in{" "}
+          Set a number of chapters and words per chapter in{" "}
           <Link href={`/projects/${projectId}/settings`} className="text-accent hover:underline">
             Project Settings
           </Link>{" "}
@@ -162,6 +161,8 @@ export function WriteWholeBookPanel({
         </div>
         <p className="font-mono text-xs text-muted">
           {totalWords.toLocaleString()} / {targetWordCount.toLocaleString()} words ({progressPct}%)
+          {" · "}
+          {chapters.filter((c) => c.content.trim()).length} / {targetChapterCount} chapters
         </p>
       </div>
 

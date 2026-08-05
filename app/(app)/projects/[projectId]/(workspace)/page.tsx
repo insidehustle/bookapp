@@ -50,7 +50,8 @@ export default async function WorkspaceIndexPage({
       <div className="w-full text-left">
         <WriteWholeBookPanel
           projectId={projectId}
-          targetWordCount={project.targetWordCount}
+          targetChapterCount={project.targetChapterCount}
+          targetWordsPerChapter={project.targetWordsPerChapter}
           initialChapters={chapters}
         />
       </div>

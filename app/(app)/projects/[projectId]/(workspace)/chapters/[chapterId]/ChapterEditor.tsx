@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Chapter, ManuscriptFile, Voice } from "@prisma/client";
 import { updateChapterContent, undoChapterContent } from "@/app/actions/chapters";
 import { saveChapterAsVoiceSample } from "@/app/actions/voices";
-import { extractStreamTrailer } from "@/lib/claude/errors";
+import { extractStreamTrailer, describeStreamOutcome } from "@/lib/claude/errors";
 import { SelectableContent } from "@/components/SelectableContent";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -14,11 +14,13 @@ export function ChapterEditor({
   chapter,
   files,
   voices,
+  targetWordsPerChapter,
 }: {
   projectId: string;
   chapter: Chapter;
   files: ManuscriptFile[];
   voices: Voice[];
+  targetWordsPerChapter: number | null;
 }) {
   const [content, setContent] = useState(chapter.content);
   const [savedContent, setSavedContent] = useState(chapter.content);
@@ -77,11 +79,7 @@ export function ChapterEditor({
 
       const { text: finalText, outcome } = extractStreamTrailer(full);
       if (outcome && outcome.type !== "ok") {
-        setError(
-          outcome.type === "refusal"
-            ? "The model declined to generate this."
-            : "The response was cut off — try again or with a shorter instruction.",
-        );
+        setError(describeStreamOutcome(outcome));
         setContent(savedContent);
         return;
       }
@@ -103,6 +101,7 @@ export function ChapterEditor({
     await streamFrom(`/api/projects/${projectId}/chapters/${chapter.id}/${endpoint}`, {
       instruction: composeInstruction.trim(),
       fileIds: Array.from(selectedFileIds),
+      ...(mode === "write" && targetWordsPerChapter ? { targetWordCount: targetWordsPerChapter } : {}),
     });
     setComposeInstruction("");
   }
@@ -246,6 +245,11 @@ export function ChapterEditor({
             <p className="text-sm font-medium">
               {mode === "write" ? "Write this chapter" : "Rewrite this chapter"}
             </p>
+            {mode === "write" && targetWordsPerChapter && (
+              <p className="text-xs text-muted">
+                Targeting ≈{targetWordsPerChapter.toLocaleString()} words (from Project Settings).
+              </p>
+            )}
             <textarea
               value={composeInstruction}
               onChange={(event) => setComposeInstruction(event.target.value)}

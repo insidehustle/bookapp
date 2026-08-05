@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { PlanningDocument } from "@prisma/client";
-import { extractStreamTrailer } from "@/lib/claude/errors";
+import { extractStreamTrailer, describeStreamOutcome } from "@/lib/claude/errors";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Markdown } from "@/components/Markdown";
@@ -59,11 +59,7 @@ export function StyleInterviewPanel({ projectId, initialMessages, onFinalized }:
 
       const { outcome } = extractStreamTrailer(full);
       if (outcome && outcome.type !== "ok") {
-        setError(
-          outcome.type === "refusal"
-            ? "Claude declined to respond to that."
-            : "The response was cut off — try a shorter message.",
-        );
+        setError(describeStreamOutcome(outcome));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "The interview turn failed.");

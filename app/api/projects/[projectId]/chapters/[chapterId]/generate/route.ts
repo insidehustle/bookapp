@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { streamChapterDraft } from "@/lib/claude/streamChapterDraft";
 import { renderReferenceFilesBlock } from "@/lib/claude/promptBuilder";
-import { classifyStopReason, encodeStreamTrailer } from "@/lib/claude/errors";
+import { classifyStopReason, encodeStreamTrailer, isRateLimitError } from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
 
@@ -92,8 +92,12 @@ export async function POST(
           controller.enqueue(encoder.encode(encodeStreamTrailer(outcome)));
         }
       } catch (error) {
-        controller.error(error);
-        return;
+        if (isRateLimitError(error)) {
+          controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "rate_limited" })));
+        } else {
+          console.error("AI request failed:", error);
+          controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "server_error" })));
+        }
       }
       controller.close();
     },

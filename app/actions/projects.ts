@@ -23,7 +23,8 @@ const createProjectSchema = z.object({
   title: z.string().min(1).max(200),
   premise: z.string().max(20000).optional(),
   genre: z.string().max(120).optional(),
-  targetWordCount: z.coerce.number().int().positive().optional(),
+  targetChapterCount: z.coerce.number().int().positive().optional(),
+  targetWordsPerChapter: z.coerce.number().int().positive().optional(),
 });
 
 // Turns the first Zod issue into a short, author-facing message instead of
@@ -45,7 +46,8 @@ export async function createProject(formData: FormData) {
     title: formData.get("title"),
     premise: formData.get("premise") || undefined,
     genre: formData.get("genre") || undefined,
-    targetWordCount: formData.get("targetWordCount") || undefined,
+    targetChapterCount: formData.get("targetChapterCount") || undefined,
+    targetWordsPerChapter: formData.get("targetWordsPerChapter") || undefined,
   });
   if (!result.success) {
     redirect(`/projects/new?error=${encodeURIComponent(firstIssueMessage(result.error, "Please check the form and try again."))}`);
@@ -63,7 +65,8 @@ const updateProjectSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   premise: z.string().max(20000).optional(),
   genre: z.string().max(120).optional(),
-  targetWordCount: z.coerce.number().int().positive().optional(),
+  targetChapterCount: z.coerce.number().int().positive().optional(),
+  targetWordsPerChapter: z.coerce.number().int().positive().optional(),
 });
 
 export async function updateProject(projectId: string, formData: FormData) {
@@ -74,7 +77,8 @@ export async function updateProject(projectId: string, formData: FormData) {
     title: formData.get("title") || undefined,
     premise: formData.get("premise") || undefined,
     genre: formData.get("genre") || undefined,
-    targetWordCount: formData.get("targetWordCount") || undefined,
+    targetChapterCount: formData.get("targetChapterCount") || undefined,
+    targetWordsPerChapter: formData.get("targetWordsPerChapter") || undefined,
   });
   if (!result.success) {
     redirect(

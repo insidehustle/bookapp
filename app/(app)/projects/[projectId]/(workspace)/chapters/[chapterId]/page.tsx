@@ -9,7 +9,7 @@ export default async function ChapterEditorPage({
 }) {
   const { projectId, chapterId } = await params;
   const userId = await requireUserId();
-  await getOwnedProject(projectId, userId);
+  const project = await getOwnedProject(projectId, userId);
 
   const [chapter, files, voices] = await Promise.all([
     prisma.chapter.findFirst({ where: { id: chapterId, projectId } }),
@@ -20,5 +20,13 @@ export default async function ChapterEditorPage({
     return <p className="text-sm text-muted">Chapter not found.</p>;
   }
 
-  return <ChapterEditor projectId={projectId} chapter={chapter} files={files} voices={voices} />;
+  return (
+    <ChapterEditor
+      projectId={projectId}
+      chapter={chapter}
+      files={files}
+      voices={voices}
+      targetWordsPerChapter={project.targetWordsPerChapter}
+    />
+  );
 }

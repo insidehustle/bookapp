@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/authz";
 import { createProject } from "@/app/actions/projects";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { TargetWordsFields } from "../TargetWordsFields";
 
 export default async function NewProjectPage({
   searchParams,
@@ -32,15 +33,7 @@ export default async function NewProjectPage({
             Premise
             <textarea name="premise" rows={8} maxLength={20000} className="rounded-lg px-3 py-2" />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-muted">
-            Target word count
-            <input
-              type="number"
-              name="targetWordCount"
-              min={1000}
-              className="rounded-lg px-3 py-2"
-            />
-          </label>
+          <TargetWordsFields />
           {voices.length > 0 && (
             <label className="flex flex-col gap-1 text-sm text-muted">
               Voice

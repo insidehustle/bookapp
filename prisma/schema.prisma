@@ -68,16 +68,17 @@ enum ProjectStatus {
 }
 
 model Project {
-  id              String        @id @default(cuid())
-  userId          String
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title           String
-  premise         String?       @db.Text
-  genre           String?
-  targetWordCount Int?
-  status          ProjectStatus @default(PLANNING)
-  voiceId         String?
-  voice           Voice?        @relation(fields: [voiceId], references: [id], onDelete: SetNull)
+  id                    String        @id @default(cuid())
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                 String
+  premise               String?       @db.Text
+  genre                 String?
+  targetChapterCount    Int?
+  targetWordsPerChapter Int?
+  status                ProjectStatus @default(PLANNING)
+  voiceId               String?
+  voice                 Voice?        @relation(fields: [voiceId], references: [id], onDelete: SetNull)
 
   planningDocs      PlanningDocument[]
   chapters          Chapter[]

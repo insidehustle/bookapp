@@ -5,6 +5,7 @@ import { updateProject } from "@/app/actions/projects";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { TargetWordsFields } from "../../TargetWordsFields";
 
 export default async function ProjectSettingsPage({
   params,
@@ -68,19 +69,10 @@ export default async function ProjectSettingsPage({
               className="rounded-lg px-3 py-2"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-muted">
-            Target word count
-            <input
-              type="number"
-              name="targetWordCount"
-              min={1000}
-              defaultValue={project.targetWordCount ?? ""}
-              className="rounded-lg px-3 py-2"
-            />
-            <span className="text-xs text-muted">
-              Used by &quot;Write the whole book&quot; to know when the manuscript is done.
-            </span>
-          </label>
+          <TargetWordsFields
+            defaultChapterCount={project.targetChapterCount}
+            defaultWordsPerChapter={project.targetWordsPerChapter}
+          />
           <label className="flex flex-col gap-1 text-sm text-muted">
             Voice
             <select

@@ -95,7 +95,10 @@ export default function TutorialPage() {
         <p>Each book you write lives in its own project. To start one:</p>
         <ol>
           <li>Click <strong>New project</strong> from the projects list.</li>
-          <li>Give it a title — genre, premise, and target word count are optional but help the AI stay on track.</li>
+          <li>
+            Give it a title — genre, premise, and a target number of chapters/words per chapter
+            are optional but help the AI stay on track.
+          </li>
           <li>
             If you&apos;ve already created a <strong>Voice</strong> (see below), you can attach it
             here too — or add one later from Settings.
@@ -194,11 +197,14 @@ export default function TutorialPage() {
         <p>
           On a project&apos;s home page (click the project title), the{" "}
           <strong>Write the whole book</strong> panel drafts chapters one after another —
-          creating new ones as needed — until the manuscript reaches your target word count. It
-          needs a target word count set (Settings will prompt you if it&apos;s missing). Progress
-          shows live; <strong>Stop after this chapter</strong> lets the current one finish cleanly
-          before halting. It&apos;s resumable — closing the tab and coming back just continues
-          where it left off.
+          creating new ones as needed — until the manuscript reaches your target. The target
+          itself comes from two numbers set in Settings: a <strong>number of chapters</strong>{" "}
+          and <strong>words per chapter</strong> — the app multiplies these to show the total
+          word count, and uses words-per-chapter as the length target for each chapter it writes
+          (including a single chapter&apos;s own Write button, not just whole-book mode).
+          Progress shows live; <strong>Stop after this chapter</strong> lets the current one
+          finish cleanly before halting. It&apos;s resumable — closing the tab and coming back
+          just continues where it left off.
         </p>
       </Section>
 
@@ -251,8 +257,8 @@ export default function TutorialPage() {
       <Section id="settings" icon={<SettingsIcon className={iconClass} />} title="10. Settings">
         <p>
           Every project has a <strong>Settings</strong> page (next to Files/Manuscript) showing
-          everything you filled in at creation — title, genre, premise, target word count, and
-          the attached Voice — all editable at any time.
+          everything you filled in at creation — title, genre, premise, target chapters/words per
+          chapter, and the attached Voice — all editable at any time.
         </p>
       </Section>
 
