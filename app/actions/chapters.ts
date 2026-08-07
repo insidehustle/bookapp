@@ -77,6 +77,60 @@ export async function deleteChapterSilent(projectId: string, chapterId: string) 
   revalidatePath(`/projects/${projectId}`);
 }
 
+export async function renameChapter(projectId: string, chapterId: string, title: string) {
+  const userId = await requireUserId();
+  await getOwnedProject(projectId, userId);
+
+  const trimmed = title.trim();
+  if (!trimmed) {
+    throw new Error("Chapter title can't be empty.");
+  }
+
+  const chapter = await prisma.chapter.findFirst({ where: { id: chapterId, projectId } });
+  if (!chapter) {
+    throw new Error("Chapter not found.");
+  }
+
+  await prisma.chapter.update({ where: { id: chapterId }, data: { title: trimmed } });
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/chapters/${chapterId}`);
+}
+
+/**
+ * Swaps a chapter's order with its immediate neighbor in that direction.
+ * Goes through a placeholder order (-1) mid-transaction since `order` has a
+ * `[projectId, order]` unique constraint - two chapters can't briefly share
+ * a value, even inside a transaction.
+ */
+export async function moveChapter(projectId: string, chapterId: string, direction: "up" | "down") {
+  const userId = await requireUserId();
+  await getOwnedProject(projectId, userId);
+
+  const chapter = await prisma.chapter.findFirst({ where: { id: chapterId, projectId } });
+  if (!chapter) {
+    throw new Error("Chapter not found.");
+  }
+
+  const neighbor = await prisma.chapter.findFirst({
+    where: {
+      projectId,
+      order: direction === "up" ? { lt: chapter.order } : { gt: chapter.order },
+    },
+    orderBy: { order: direction === "up" ? "desc" : "asc" },
+  });
+  if (!neighbor) {
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.chapter.update({ where: { id: chapter.id }, data: { order: -1 } }),
+    prisma.chapter.update({ where: { id: neighbor.id }, data: { order: chapter.order } }),
+    prisma.chapter.update({ where: { id: chapter.id }, data: { order: neighbor.order } }),
+  ]);
+
+  revalidatePath(`/projects/${projectId}`);
+}
+
 export async function undoChapterContent(projectId: string, chapterId: string) {
   const userId = await requireUserId();
   await getOwnedProject(projectId, userId);
