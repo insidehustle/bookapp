@@ -3,21 +3,35 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Markdown } from "@/components/Markdown";
+import { SelectableContent } from "@/components/SelectableContent";
 import { CloseIcon } from "@/components/icons";
+import { updateChapterContent } from "@/app/actions/chapters";
 
 type Chapter = { id: string; order: number; title: string; content: string };
 type QueueItem = { id: string; text: string };
 
 const RATE_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
-export function ManuscriptReader({ chapters }: { chapters: Chapter[] }) {
+export function ManuscriptReader({
+  projectId,
+  chapters,
+}: {
+  projectId: string;
+  chapters: Chapter[];
+}) {
   const [isSupported, setIsSupported] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
   const [selectionText, setSelectionText] = useState("");
+  const [contentMap, setContentMap] = useState<Record<string, string>>(() =>
+    Object.fromEntries(chapters.map((chapter) => [chapter.id, chapter.content])),
+  );
+  const [savedMap, setSavedMap] = useState<Record<string, string>>(() =>
+    Object.fromEntries(chapters.map((chapter) => [chapter.id, chapter.content])),
+  );
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const rateRef = useRef(1);
   const queueRef = useRef<QueueItem[]>([]);
@@ -80,11 +94,37 @@ export function ManuscriptReader({ chapters }: { chapters: Chapter[] }) {
   }
 
   function playWholeBook() {
-    playQueue(chapters.map((chapter) => ({ id: chapter.id, text: chapter.content })));
+    playQueue(chapters.map((chapter) => ({ id: chapter.id, text: contentMap[chapter.id] ?? chapter.content })));
   }
 
   function playChapter(chapter: Chapter) {
-    playQueue([{ id: chapter.id, text: chapter.content }]);
+    playQueue([{ id: chapter.id, text: contentMap[chapter.id] ?? chapter.content }]);
+  }
+
+  async function handleSaveChapter(chapterId: string) {
+    setSavingId(chapterId);
+    try {
+      await updateChapterContent(projectId, chapterId, contentMap[chapterId]);
+      setSavedMap((prev) => ({ ...prev, [chapterId]: contentMap[chapterId] }));
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function handleReviseSelection(
+    chapterId: string,
+    params: { selectedText: string; instruction: string; fileIds: string[] },
+  ) {
+    const response = await fetch(`/api/projects/${projectId}/revise-selection`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chapterId, ...params }),
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      throw new Error(body?.error ?? "Revision failed.");
+    }
+    return body.replacement as string;
   }
 
   function playSelection() {
@@ -190,25 +230,48 @@ export function ManuscriptReader({ chapters }: { chapters: Chapter[] }) {
         onTouchEnd={handleSelectionChange}
         className="flex flex-col gap-6"
       >
-        {chapters.map((chapter) => (
-          <Card key={chapter.id} as="article" id={`chapter-${chapter.order}`}>
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-medium">
-                Chapter {chapter.order}: {chapter.title}
-              </h2>
-              {isSupported && (
-                <button
-                  type="button"
-                  onClick={() => playChapter(chapter)}
-                  className="shrink-0 text-xs text-muted transition-colors hover:text-accent"
-                >
-                  {isSpeaking && activeId === chapter.id ? "Reading…" : "Read chapter"}
-                </button>
-              )}
-            </div>
-            <Markdown content={chapter.content} />
-          </Card>
-        ))}
+        {chapters.map((chapter) => {
+          const content = contentMap[chapter.id] ?? chapter.content;
+          const isDirty = content !== savedMap[chapter.id];
+          const isSaving = savingId === chapter.id;
+          return (
+            <Card key={chapter.id} as="article" id={`chapter-${chapter.order}`}>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-medium">
+                  Chapter {chapter.order}: {chapter.title}
+                </h2>
+                <div className="flex shrink-0 items-center gap-3">
+                  {isSupported && (
+                    <button
+                      type="button"
+                      onClick={() => playChapter(chapter)}
+                      className="text-xs text-muted transition-colors hover:text-accent"
+                    >
+                      {isSpeaking && activeId === chapter.id ? "Reading…" : "Read chapter"}
+                    </button>
+                  )}
+                  {isDirty && (
+                    <Button
+                      onClick={() => handleSaveChapter(chapter.id)}
+                      disabled={isSaving}
+                      className="px-3 py-1 text-xs"
+                    >
+                      {isSaving ? "Saving…" : "Save"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <SelectableContent
+                value={content}
+                onChange={(next) =>
+                  setContentMap((prev) => ({ ...prev, [chapter.id]: next }))
+                }
+                onRequestRevision={(params) => handleReviseSelection(chapter.id, params)}
+                minHeight="8rem"
+              />
+            </Card>
+          );
+        })}
       </div>
 
       {isSupported && selectionText && (

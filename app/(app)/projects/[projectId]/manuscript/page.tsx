@@ -42,7 +42,7 @@ export default async function ManuscriptPage({
 
       <FeedbackPanel projectId={projectId} />
 
-      <ManuscriptReader chapters={chapters} />
+      <ManuscriptReader projectId={projectId} chapters={chapters} />
     </div>
   );
 }
