@@ -10,6 +10,7 @@ export const MODELS = {
   FEEDBACK: "gemini-2.5-flash",
   BRAINSTORM: "gemini-2.5-flash",
   POLISH: "gemini-2.5-flash",
+  CHAPTER_TITLE: "gemini-2.5-flash",
 } as const;
 
 export type ClaudeTask = keyof typeof MODELS;

@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { streamChapterDraft } from "@/lib/claude/streamChapterDraft";
+import { generateChapterTitle } from "@/lib/claude/generateChapterTitle";
 import { renderReferenceFilesBlock } from "@/lib/claude/promptBuilder";
 import { classifyStopReason, encodeStreamTrailer, isRateLimitError } from "@/lib/claude/errors";
 
@@ -77,17 +79,39 @@ export async function POST(
 
         const outcome = lastChunk ? classifyStopReason(lastChunk) : { type: "ok" as const };
         if (outcome.type === "ok" && full.trim()) {
+          // Only replace the placeholder title Prisma assigned at chapter
+          // creation - never override a title the user already set.
+          const isPlaceholderTitle = chapter.title === `Chapter ${chapter.order}`;
+          let title: string | undefined;
+          if (isPlaceholderTitle) {
+            try {
+              title = await generateChapterTitle({
+                projectTitle: project.title,
+                genre: project.genre,
+                chapterOrder: chapter.order,
+                content: full,
+              });
+            } catch {
+              // Best-effort - keep the placeholder title if this fails.
+            }
+          }
+
           await prisma.chapter.update({
             where: { id: chapterId },
             data: {
               previousContent: chapter.content || null,
               content: full,
+              ...(title ? { title } : {}),
               status: "DRAFTED",
               source: "AI_GENERATED",
               wordCount: full.split(/\s+/).filter(Boolean).length,
               lastInstruction: instruction || null,
             },
           });
+          if (title) {
+            controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "ok", title })));
+          }
+          revalidatePath(`/projects/${projectId}`);
         } else if (outcome.type !== "ok") {
           controller.enqueue(encoder.encode(encodeStreamTrailer(outcome)));
         }

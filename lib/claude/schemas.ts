@@ -105,6 +105,15 @@ export const BrainstormSchema = z.object({
 });
 export type Brainstorm = z.infer<typeof BrainstormSchema>;
 
+export const ChapterTitleSchema = z.object({
+  title: z
+    .string()
+    .min(1)
+    .max(80)
+    .describe("A short, evocative chapter title - no 'Chapter N' prefix, no surrounding quotes."),
+});
+export type ChapterTitleResult = z.infer<typeof ChapterTitleSchema>;
+
 export const PLANNING_DOC_CONFIG = {
   REFERENCE_PLOT: {
     label: "Reference / Plot",

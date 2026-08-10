@@ -1,5 +1,5 @@
 export type ClaudeOutcome =
-  | { type: "ok" }
+  | { type: "ok"; title?: string }
   | { type: "refusal"; category: string | null }
   | { type: "truncated" }
   | { type: "rate_limited" }

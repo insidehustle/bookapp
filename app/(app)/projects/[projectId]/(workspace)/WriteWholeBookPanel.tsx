@@ -70,7 +70,7 @@ export function WriteWholeBookPanel({
     if (outcome && outcome.type !== "ok") {
       throw new Error(`Chapter ${chapter.order}: ${describeStreamOutcome(outcome)}`);
     }
-    return text;
+    return { text, title: outcome?.type === "ok" ? outcome.title : undefined };
   }
 
   async function handleWriteWholeBook() {
@@ -103,9 +103,11 @@ export function WriteWholeBookPanel({
         const wordsRemaining = targetWordCount - wordsSoFar;
         setCurrentLabel(`Writing Chapter ${next.order}: ${next.title}…`);
 
-        const content = await draftChapter(next, wordsRemaining);
+        const { text: content, title } = await draftChapter(next, wordsRemaining);
         const wordCount = content.split(/\s+/).filter(Boolean).length;
-        current = current.map((c) => (c.id === next!.id ? { ...c, content, wordCount } : c));
+        current = current.map((c) =>
+          c.id === next!.id ? { ...c, content, wordCount, ...(title ? { title } : {}) } : c,
+        );
         setChapters(current);
         router.refresh();
       }

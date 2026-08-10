@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Chapter, ManuscriptFile, Voice } from "@prisma/client";
 import { updateChapterContent, undoChapterContent } from "@/app/actions/chapters";
 import { saveChapterAsVoiceSample } from "@/app/actions/voices";
@@ -23,8 +24,10 @@ export function ChapterEditor({
   voices: Voice[];
   targetWordsPerChapter: number | null;
 }) {
+  const router = useRouter();
   const [content, setContent] = useState(chapter.content);
   const [savedContent, setSavedContent] = useState(chapter.content);
+  const [title, setTitle] = useState(chapter.title);
   const [hasPrevious, setHasPrevious] = useState(chapter.previousContent !== null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -87,6 +90,10 @@ export function ChapterEditor({
       setContent(finalText);
       setSavedContent(finalText);
       setHasPrevious(true);
+      if (outcome?.title) {
+        setTitle(outcome.title);
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed.");
       setContent(savedContent);
@@ -167,7 +174,7 @@ export function ChapterEditor({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-lg font-semibold sm:text-xl">
-          Chapter {chapter.order}: {chapter.title}
+          Chapter {chapter.order}: {title}
         </h1>
         <div className="flex items-center gap-3">
           <span className="font-mono text-xs text-muted">{wordCount.toLocaleString()} words</span>
@@ -229,7 +236,7 @@ export function ChapterEditor({
           <DeleteChapterButton
             projectId={projectId}
             chapterId={chapter.id}
-            chapterTitle={`Chapter ${chapter.order}: ${chapter.title}`}
+            chapterTitle={`Chapter ${chapter.order}: ${title}`}
           />
         </div>
       </div>
