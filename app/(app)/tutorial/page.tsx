@@ -206,6 +206,12 @@ export default function TutorialPage() {
           finish cleanly before halting. It&apos;s resumable — closing the tab and coming back
           just continues where it left off.
         </p>
+        <p>
+          Below it, <strong>Command a change across chapters</strong> applies one instruction —
+          a rename, a tone shift, tightening pacing — to as many already-drafted chapters as you
+          pick, one at a time, optionally grounded in reference files. Unlike a single
+          chapter&apos;s Rewrite, this runs across the whole selection in one go.
+        </p>
       </Section>
 
       <Section id="manuscript" icon={<ManuscriptIcon className={iconClass} />} title="7. Manuscript, feedback, export & listen">

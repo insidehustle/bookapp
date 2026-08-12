@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
 import { createChapter } from "@/app/actions/chapters";
 import { WriteWholeBookPanel } from "./WriteWholeBookPanel";
+import { ManuscriptCommandPanel } from "./ManuscriptCommandPanel";
 
 export default async function WorkspaceIndexPage({
   params,
@@ -13,10 +14,10 @@ export default async function WorkspaceIndexPage({
   const userId = await requireUserId();
   const project = await getOwnedProject(projectId, userId);
 
-  const chapters = await prisma.chapter.findMany({
-    where: { projectId },
-    orderBy: { order: "asc" },
-  });
+  const [chapters, files] = await Promise.all([
+    prisma.chapter.findMany({ where: { projectId }, orderBy: { order: "asc" } }),
+    prisma.manuscriptFile.findMany({ where: { projectId }, orderBy: { createdAt: "asc" } }),
+  ]);
 
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center gap-6 py-16 text-center">
@@ -47,13 +48,14 @@ export default async function WorkspaceIndexPage({
         </Link>
       </div>
 
-      <div className="w-full text-left">
+      <div className="flex w-full flex-col gap-4 text-left">
         <WriteWholeBookPanel
           projectId={projectId}
           targetChapterCount={project.targetChapterCount}
           targetWordsPerChapter={project.targetWordsPerChapter}
           initialChapters={chapters}
         />
+        <ManuscriptCommandPanel projectId={projectId} chapters={chapters} files={files} />
       </div>
     </div>
   );
