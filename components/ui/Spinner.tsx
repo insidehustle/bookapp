@@ -1,18 +1,23 @@
-export function Spinner({ className = "h-6 w-6" }: { className?: string }) {
+/**
+ * A glowing gradient-ring spinner matching the app's accent/accent-2 brand
+ * glow (see the header dot and hero title gradient) - a soft pulsing halo
+ * behind a spinning conic-gradient ring, rather than a flat single-color
+ * stroke.
+ */
+export function Spinner({ className = "h-8 w-8" }: { className?: string }) {
   return (
-    <svg
-      className={`animate-spin text-accent ${className}`}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
-      <path
-        d="M21 12a9 9 0 0 0-9-9"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
+    <div className={`relative ${className}`}>
+      <div className="absolute inset-0 animate-pulse rounded-full bg-accent/25 blur-lg" />
+      <div
+        className="absolute inset-0 animate-spin rounded-full"
+        style={{
+          background:
+            "conic-gradient(from 0deg, transparent 0%, var(--accent-2) 35%, var(--accent) 75%, transparent 100%)",
+          WebkitMask:
+            "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))",
+          mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))",
+        }}
       />
-    </svg>
+    </div>
   );
 }
