@@ -89,6 +89,7 @@ export function WorkspaceSidebar({
         <Link
           href={`/projects/${projectId}/files`}
           onClick={closeSidebar}
+          prefetch={false}
           className="py-1 text-muted transition-colors hover:text-accent"
         >
           Files
@@ -96,6 +97,7 @@ export function WorkspaceSidebar({
         <Link
           href={`/projects/${projectId}/manuscript`}
           onClick={closeSidebar}
+          prefetch={false}
           className="py-1 text-muted transition-colors hover:text-accent"
         >
           Manuscript
@@ -103,6 +105,7 @@ export function WorkspaceSidebar({
         <Link
           href={`/projects/${projectId}/settings`}
           onClick={closeSidebar}
+          prefetch={false}
           className="py-1 text-muted transition-colors hover:text-accent"
         >
           Settings
