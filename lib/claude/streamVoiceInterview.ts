@@ -1,5 +1,5 @@
+import type { GoogleGenAI } from "@google/genai";
 import type { VoiceInterviewMessage } from "@prisma/client";
-import { gemini } from "@/lib/claude/client";
 import { selectModel } from "@/lib/claude/models";
 
 const SYSTEM_PROMPT = `You are an experienced writing coach conducting a short interview with an author to capture their writing voice, so it can be reused consistently across their books.
@@ -23,7 +23,7 @@ Keep your questions warm, specific, and grounded in what the author has already 
  * generateContentStream resolves to an AsyncGenerator) - callers `for await`
  * the result.
  */
-export async function streamVoiceInterviewTurn(params: {
+export async function streamVoiceInterviewTurn(client: GoogleGenAI, params: {
   voiceName: string;
   voiceDescription: string | null;
   history: VoiceInterviewMessage[];
@@ -33,7 +33,7 @@ export async function streamVoiceInterviewTurn(params: {
     params.voiceDescription ? `Description: ${params.voiceDescription}` : "",
   ].filter(Boolean);
 
-  return gemini.models.generateContentStream({
+  return client.models.generateContentStream({
     model: selectModel("INTERVIEW"),
     contents: params.history.map((message) => ({
       role: message.role === "USER" ? "user" : "model",

@@ -1,6 +1,6 @@
 import { z } from "zod";
+import type { GoogleGenAI } from "@google/genai";
 import type { PlanningDocument } from "@prisma/client";
-import { gemini } from "@/lib/claude/client";
 import { selectModel } from "@/lib/claude/models";
 import { PLANNING_DOC_CONFIG, type PlanningDocTypeKey } from "@/lib/claude/schemas";
 import { renderPlanningDocsBlock } from "@/lib/claude/promptBuilder";
@@ -25,6 +25,7 @@ const SYSTEM_PREAMBLE =
 const MAX_MANUSCRIPT_CHARS = 400_000;
 
 export async function generatePlanningDoc(
+  client: GoogleGenAI,
   input: GeneratePlanningDocInput,
 ): Promise<Record<string, unknown>> {
   const config = PLANNING_DOC_CONFIG[input.type];
@@ -47,7 +48,7 @@ export async function generatePlanningDoc(
     instructionParts.push(`Additional notes from the author: ${input.userNotes}`);
   }
 
-  const response = await gemini.models.generateContent({
+  const response = await client.models.generateContent({
     model: selectModel("DRAFT"),
     contents: [
       {

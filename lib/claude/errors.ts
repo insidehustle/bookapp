@@ -3,6 +3,8 @@ export type ClaudeOutcome =
   | { type: "refusal"; category: string | null }
   | { type: "truncated" }
   | { type: "rate_limited" }
+  | { type: "missing_api_key" }
+  | { type: "invalid_api_key" }
   | { type: "server_error" };
 
 /**
@@ -19,6 +21,31 @@ export function isRateLimitError(error: unknown): boolean {
     "status" in error &&
     (error as { status?: unknown }).status === 429
   );
+}
+
+/**
+ * A Gemini API key that's missing, revoked, or lacks permission comes back
+ * as a 401/403 - distinct from 429 (rate limit) and worth its own friendly
+ * message pointing the user at Settings instead of "try again later".
+ */
+export function isAuthError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    ((error as { status?: unknown }).status === 401 ||
+      (error as { status?: unknown }).status === 403)
+  );
+}
+
+/**
+ * Thrown when a user hasn't saved a Gemini API key yet - every AI call
+ * requires one (there is no shared/fallback server key).
+ */
+export class MissingApiKeyError extends Error {
+  constructor() {
+    super("Add your Gemini API key in Settings before using AI features.");
+  }
 }
 
 // Gemini finish reasons that mean the model declined/was blocked, as
@@ -75,6 +102,9 @@ export class ClaudeTruncatedError extends Error {
  * parse an empty/HTML error body.
  */
 export function toApiErrorResponse(error: unknown): { message: string; status: number } {
+  if (error instanceof MissingApiKeyError) {
+    return { message: error.message, status: 400 };
+  }
   if (isRateLimitError(error)) {
     return {
       message:
@@ -82,13 +112,18 @@ export function toApiErrorResponse(error: unknown): { message: string; status: n
       status: 429,
     };
   }
+  if (isAuthError(error)) {
+    return {
+      message: "Your Gemini API key appears to be invalid or lacks permission. Check it in Settings.",
+      status: 401,
+    };
+  }
   if (error instanceof ClaudeRefusalError || error instanceof ClaudeTruncatedError) {
     return { message: error.message, status: 422 };
   }
   console.error("AI request failed:", error);
   return {
-    message:
-      "The AI request failed unexpectedly. This is often a missing/invalid GEMINI_API_KEY or a network issue - check the server logs for details.",
+    message: "The AI request failed unexpectedly. Please try again - check the server logs for details.",
     status: 502,
   };
 }
@@ -131,6 +166,10 @@ export function describeStreamOutcome(outcome: ClaudeOutcome): string {
       return "The response was cut off — try again or with a shorter message.";
     case "rate_limited":
       return "The AI has hit its usage limit for now. Please wait a bit and try again.";
+    case "missing_api_key":
+      return "Add your Gemini API key in Settings before using AI features.";
+    case "invalid_api_key":
+      return "Your Gemini API key appears to be invalid or lacks permission. Check it in Settings.";
     case "server_error":
       return "The AI request failed unexpectedly. Please try again.";
     case "ok":

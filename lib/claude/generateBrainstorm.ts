@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { gemini } from "@/lib/claude/client";
+import type { GoogleGenAI } from "@google/genai";
 import { selectModel } from "@/lib/claude/models";
 import { BrainstormSchema, type Brainstorm } from "@/lib/claude/schemas";
 import { ClaudeRefusalError, ClaudeTruncatedError, classifyStopReason } from "@/lib/claude/errors";
@@ -7,7 +7,7 @@ import { ClaudeRefusalError, ClaudeTruncatedError, classifyStopReason } from "@/
 const SYSTEM_PREAMBLE =
   "You are a creative brainstorming partner for a fiction author. Given a short prompt, generate a varied, specific, non-generic list of suggestions - avoid repeating the same idea with minor wording changes.";
 
-export async function generateBrainstorm(params: {
+export async function generateBrainstorm(client: GoogleGenAI, params: {
   prompt: string;
   projectTitle: string;
   genre: string | null;
@@ -20,7 +20,7 @@ export async function generateBrainstorm(params: {
     .filter(Boolean)
     .join("\n");
 
-  const response = await gemini.models.generateContent({
+  const response = await client.models.generateContent({
     model: selectModel("BRAINSTORM"),
     contents: [{ role: "user", parts: [{ text: context }] }],
     config: {

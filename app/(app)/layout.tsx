@@ -24,6 +24,9 @@ export default async function AppLayout({
           <Link href="/voices" className="text-muted transition-colors hover:text-accent">
             Voices
           </Link>
+          <Link href="/account" className="text-muted transition-colors hover:text-accent">
+            Account
+          </Link>
           <span className="hidden truncate font-mono text-xs text-muted sm:inline">
             {session?.user?.email}
           </span>

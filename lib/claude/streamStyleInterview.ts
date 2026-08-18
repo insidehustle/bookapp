@@ -1,5 +1,5 @@
+import type { GoogleGenAI } from "@google/genai";
 import type { PlanningDocument, StyleInterviewMessage } from "@prisma/client";
-import { gemini } from "@/lib/claude/client";
 import { selectModel } from "@/lib/claude/models";
 import { renderPlanningDocsBlock } from "@/lib/claude/promptBuilder";
 
@@ -20,7 +20,7 @@ Keep your questions warm, specific, and grounded in what you already know about 
  * generateContentStream resolves to an AsyncGenerator, unlike Anthropic's
  * synchronous event-emitter MessageStream) - callers `for await` the result.
  */
-export async function streamStyleInterviewTurn(params: {
+export async function streamStyleInterviewTurn(client: GoogleGenAI, params: {
   projectTitle: string;
   premise: string | null;
   genre: string | null;
@@ -38,7 +38,7 @@ export async function streamStyleInterviewTurn(params: {
       : "",
   ].filter(Boolean);
 
-  return gemini.models.generateContentStream({
+  return client.models.generateContentStream({
     model: selectModel("INTERVIEW"),
     contents: params.history.map((message) => ({
       role: message.role === "USER" ? "user" : "model",

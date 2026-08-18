@@ -2,10 +2,17 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { streamChapterDraft } from "@/lib/claude/streamChapterDraft";
 import { generateChapterTitle } from "@/lib/claude/generateChapterTitle";
 import { renderReferenceFilesBlock } from "@/lib/claude/promptBuilder";
-import { classifyStopReason, encodeStreamTrailer, isRateLimitError } from "@/lib/claude/errors";
+import {
+  classifyStopReason,
+  encodeStreamTrailer,
+  isRateLimitError,
+  isAuthError,
+  toApiErrorResponse,
+} from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
 
@@ -36,6 +43,17 @@ export async function POST(
     });
   }
 
+  let client;
+  try {
+    client = await getUserGeminiClient(userId);
+  } catch (error) {
+    const { message, status } = toApiErrorResponse(error);
+    return new Response(JSON.stringify({ error: message }), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const [planningDocs, priorChapters, referenceFiles, voice] = await Promise.all([
     prisma.planningDocument.findMany({ where: { projectId } }),
     prisma.chapter.findMany({
@@ -54,7 +72,7 @@ export async function POST(
   const body_ = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const stream = await streamChapterDraft({
+        const stream = await streamChapterDraft(client, {
           projectTitle: project.title,
           premise: project.premise,
           genre: project.genre,
@@ -85,7 +103,7 @@ export async function POST(
           let title: string | undefined;
           if (isPlaceholderTitle) {
             try {
-              title = await generateChapterTitle({
+              title = await generateChapterTitle(client, {
                 projectTitle: project.title,
                 genre: project.genre,
                 chapterOrder: chapter.order,
@@ -118,6 +136,8 @@ export async function POST(
       } catch (error) {
         if (isRateLimitError(error)) {
           controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "rate_limited" })));
+        } else if (isAuthError(error)) {
+          controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "invalid_api_key" })));
         } else {
           console.error("AI request failed:", error);
           controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "server_error" })));

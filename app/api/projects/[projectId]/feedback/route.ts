@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { generateFeedback } from "@/lib/claude/generateFeedback";
 import { toApiErrorResponse } from "@/lib/claude/errors";
 
@@ -33,7 +34,8 @@ export async function POST(
   }
 
   try {
-    const feedback = await generateFeedback({
+    const client = await getUserGeminiClient(userId);
+    const feedback = await generateFeedback(client, {
       projectTitle: project.title,
       premise: project.premise,
       genre: project.genre,

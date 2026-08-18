@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUserId, getOwnedVoice } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { generateVoiceBrain } from "@/lib/claude/generateVoiceBrain";
 import { renderPlanningDocMarkdown } from "@/lib/claude/schemas";
 import { applyVoiceBrainUpdate } from "@/app/actions/voices";
@@ -31,7 +32,8 @@ export async function POST(
     .join("\n\n");
 
   try {
-    const brain = await generateVoiceBrain({
+    const client = await getUserGeminiClient(userId);
+    const brain = await generateVoiceBrain(client, {
       name: voice.name,
       description: voice.description,
       existingBrainContent: voice.content || null,

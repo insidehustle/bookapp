@@ -1,6 +1,6 @@
 import { z } from "zod";
+import type { GoogleGenAI } from "@google/genai";
 import type { PlanningDocument } from "@prisma/client";
-import { gemini } from "@/lib/claude/client";
 import { selectModel } from "@/lib/claude/models";
 import { FeedbackSchema, type Feedback } from "@/lib/claude/schemas";
 import { renderPlanningDocsBlock } from "@/lib/claude/promptBuilder";
@@ -13,7 +13,7 @@ const SYSTEM_PREAMBLE =
 // full manuscript easily; this just guards against a pathologically large input.
 const MAX_MANUSCRIPT_CHARS = 400_000;
 
-export async function generateFeedback(params: {
+export async function generateFeedback(client: GoogleGenAI, params: {
   projectTitle: string;
   premise: string | null;
   genre: string | null;
@@ -28,7 +28,7 @@ export async function generateFeedback(params: {
     `--- Manuscript ---\n${params.manuscriptText.slice(0, MAX_MANUSCRIPT_CHARS)}`,
   ].filter(Boolean);
 
-  const response = await gemini.models.generateContent({
+  const response = await client.models.generateContent({
     model: selectModel("FEEDBACK"),
     contents: [
       {

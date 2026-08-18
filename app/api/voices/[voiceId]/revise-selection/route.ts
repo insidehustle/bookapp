@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUserId, getOwnedVoice } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { reviseSelection } from "@/lib/claude/reviseSelection";
 import { toApiErrorResponse } from "@/lib/claude/errors";
 
@@ -22,7 +23,8 @@ export async function POST(
   const { selectedText, instruction } = bodySchema.parse(await req.json());
 
   try {
-    const replacement = await reviseSelection({
+    const client = await getUserGeminiClient(userId);
+    const replacement = await reviseSelection(client, {
       fullContext: voice.content,
       selectedText,
       instruction,

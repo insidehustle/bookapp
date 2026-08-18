@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { gemini } from "@/lib/claude/client";
+import type { GoogleGenAI } from "@google/genai";
 import { selectModel } from "@/lib/claude/models";
 import { VoiceBrainSchema, type VoiceBrain } from "@/lib/claude/schemas";
 import { ClaudeRefusalError, ClaudeTruncatedError, classifyStopReason } from "@/lib/claude/errors";
@@ -16,7 +16,10 @@ export type GenerateVoiceBrainInput = {
 const SYSTEM_PREAMBLE =
   "You are an expert writing coach distilling an author's writing voice into a structured style profile. Respond only with the structured data requested.";
 
-export async function generateVoiceBrain(input: GenerateVoiceBrainInput): Promise<VoiceBrain> {
+export async function generateVoiceBrain(
+  client: GoogleGenAI,
+  input: GenerateVoiceBrainInput,
+): Promise<VoiceBrain> {
   const groundingParts = [
     `Voice name: ${input.name}`,
     input.description ? `Description: ${input.description}` : "",
@@ -37,7 +40,7 @@ export async function generateVoiceBrain(input: GenerateVoiceBrainInput): Promis
   const instruction =
     "Analyze the above and produce a structured writing-voice profile: tone, vocabulary, sentence structure, pacing, personality, humor, formality, cultural nuances, signature quirks, and forbidden patterns to avoid. If reference samples are present, base the profile primarily on what they actually demonstrate rather than the description alone.";
 
-  const response = await gemini.models.generateContent({
+  const response = await client.models.generateContent({
     model: selectModel("DRAFT"),
     contents: [
       {

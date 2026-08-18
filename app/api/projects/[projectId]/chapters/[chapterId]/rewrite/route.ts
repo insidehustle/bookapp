@@ -2,9 +2,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { streamChapterRewrite } from "@/lib/claude/streamChapterRewrite";
 import { renderReferenceFilesBlock } from "@/lib/claude/promptBuilder";
-import { classifyStopReason, encodeStreamTrailer, isRateLimitError } from "@/lib/claude/errors";
+import {
+  classifyStopReason,
+  encodeStreamTrailer,
+  isRateLimitError,
+  isAuthError,
+  toApiErrorResponse,
+} from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
 
@@ -38,6 +45,14 @@ export async function POST(
     );
   }
 
+  let client;
+  try {
+    client = await getUserGeminiClient(userId);
+  } catch (error) {
+    const { message, status } = toApiErrorResponse(error);
+    return NextResponse.json({ error: message }, { status });
+  }
+
   const [planningDocs, otherChapters, referenceFiles, voice] = await Promise.all([
     prisma.planningDocument.findMany({ where: { projectId } }),
     prisma.chapter.findMany({
@@ -56,7 +71,7 @@ export async function POST(
   const body_ = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const stream = await streamChapterRewrite({
+        const stream = await streamChapterRewrite(client, {
           projectTitle: project.title,
           premise: project.premise,
           genre: project.genre,
@@ -97,6 +112,8 @@ export async function POST(
       } catch (error) {
         if (isRateLimitError(error)) {
           controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "rate_limited" })));
+        } else if (isAuthError(error)) {
+          controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "invalid_api_key" })));
         } else {
           console.error("AI request failed:", error);
           controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "server_error" })));

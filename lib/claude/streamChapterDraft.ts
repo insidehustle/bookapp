@@ -1,5 +1,5 @@
+import type { GoogleGenAI } from "@google/genai";
 import type { Chapter, PlanningDocument } from "@prisma/client";
-import { gemini } from "@/lib/claude/client";
 import { selectModel } from "@/lib/claude/models";
 import { renderManuscriptSoFarBlock, renderPlanningDocsBlock } from "@/lib/claude/promptBuilder";
 
@@ -10,7 +10,7 @@ const SYSTEM_PROMPT = `You are a skilled ghostwriter drafting a chapter for an a
  * generateContentStream resolves to an AsyncGenerator) - callers `for await`
  * the result.
  */
-export async function streamChapterDraft(params: {
+export async function streamChapterDraft(client: GoogleGenAI, params: {
   projectTitle: string;
   premise: string | null;
   genre: string | null;
@@ -49,7 +49,7 @@ export async function streamChapterDraft(params: {
     .filter(Boolean)
     .join(" ");
 
-  return gemini.models.generateContentStream({
+  return client.models.generateContentStream({
     model: selectModel("DRAFT"),
     contents: [{ role: "user", parts: [{ text: instruction }] }],
     config: {

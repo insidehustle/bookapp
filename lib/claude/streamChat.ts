@@ -1,5 +1,5 @@
+import type { GoogleGenAI } from "@google/genai";
 import type { ChatMessage, PlanningDocument } from "@prisma/client";
-import { gemini } from "@/lib/claude/client";
 import { selectModel } from "@/lib/claude/models";
 import { renderPlanningDocsBlock } from "@/lib/claude/promptBuilder";
 
@@ -12,7 +12,7 @@ This is an open-ended chat, not a structured interview - follow the author's lea
  * generateContentStream resolves to an AsyncGenerator, unlike Anthropic's
  * synchronous event-emitter MessageStream) - callers `for await` the result.
  */
-export async function streamChatTurn(params: {
+export async function streamChatTurn(client: GoogleGenAI, params: {
   projectTitle: string;
   premise: string | null;
   genre: string | null;
@@ -30,7 +30,7 @@ export async function streamChatTurn(params: {
       : "",
   ].filter(Boolean);
 
-  return gemini.models.generateContentStream({
+  return client.models.generateContentStream({
     model: selectModel("CHAT"),
     contents: params.history.map((message) => ({
       role: message.role === "USER" ? "user" : "model",

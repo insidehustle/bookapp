@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { requireUserId, getOwnedVoice } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { streamVoiceInterviewTurn } from "@/lib/claude/streamVoiceInterview";
-import { classifyStopReason, encodeStreamTrailer, isRateLimitError } from "@/lib/claude/errors";
+import {
+  classifyStopReason,
+  encodeStreamTrailer,
+  isRateLimitError,
+  isAuthError,
+  toApiErrorResponse,
+} from "@/lib/claude/errors";
 
 export const runtime = "nodejs";
 
@@ -22,6 +29,17 @@ export async function POST(
     });
   }
 
+  let client;
+  try {
+    client = await getUserGeminiClient(userId);
+  } catch (error) {
+    const { message: errorMessage, status } = toApiErrorResponse(error);
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const history = await prisma.voiceInterviewMessage.findMany({
     where: { voiceId },
     orderBy: { createdAt: "asc" },
@@ -37,7 +55,7 @@ export async function POST(
   const body_ = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const stream = await streamVoiceInterviewTurn({
+        const stream = await streamVoiceInterviewTurn(client, {
           voiceName: voice.name,
           voiceDescription: voice.description,
           history: [...history, userMessage],
@@ -63,6 +81,8 @@ export async function POST(
       } catch (error) {
         if (isRateLimitError(error)) {
           controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "rate_limited" })));
+        } else if (isAuthError(error)) {
+          controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "invalid_api_key" })));
         } else {
           console.error("AI request failed:", error);
           controller.enqueue(encoder.encode(encodeStreamTrailer({ type: "server_error" })));

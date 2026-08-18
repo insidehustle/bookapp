@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { reviseSelection } from "@/lib/claude/reviseSelection";
 import { renderReferenceFilesBlock } from "@/lib/claude/promptBuilder";
 import { toApiErrorResponse } from "@/lib/claude/errors";
@@ -47,7 +48,8 @@ export async function POST(
   }
 
   try {
-    const replacement = await reviseSelection({
+    const client = await getUserGeminiClient(userId);
+    const replacement = await reviseSelection(client, {
       fullContext: source.content,
       selectedText,
       instruction,

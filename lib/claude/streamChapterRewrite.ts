@@ -1,5 +1,5 @@
+import type { GoogleGenAI } from "@google/genai";
 import type { Chapter, PlanningDocument } from "@prisma/client";
-import { gemini } from "@/lib/claude/client";
 import { selectModel } from "@/lib/claude/models";
 import { renderManuscriptSoFarBlock, renderPlanningDocsBlock } from "@/lib/claude/promptBuilder";
 
@@ -10,7 +10,7 @@ const SYSTEM_PROMPT = `You are a skilled developmental editor rewriting a chapte
  * generateContentStream resolves to an AsyncGenerator) - callers `for await`
  * the result.
  */
-export async function streamChapterRewrite(params: {
+export async function streamChapterRewrite(client: GoogleGenAI, params: {
   projectTitle: string;
   premise: string | null;
   genre: string | null;
@@ -46,7 +46,7 @@ export async function streamChapterRewrite(params: {
     `Instruction: ${params.instruction}`,
   ].join("\n");
 
-  return gemini.models.generateContentStream({
+  return client.models.generateContentStream({
     model: selectModel("REWRITE"),
     contents: [{ role: "user", parts: [{ text: userText }] }],
     config: {

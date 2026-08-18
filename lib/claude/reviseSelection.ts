@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { gemini } from "@/lib/claude/client";
+import type { GoogleGenAI } from "@google/genai";
 import { selectModel } from "@/lib/claude/models";
 import { SelectionReviseSchema } from "@/lib/claude/schemas";
 import { ClaudeRefusalError, ClaudeTruncatedError, classifyStopReason } from "@/lib/claude/errors";
 
-export async function reviseSelection(params: {
+export async function reviseSelection(client: GoogleGenAI, params: {
   fullContext: string;
   selectedText: string;
   instruction: string;
@@ -18,7 +18,7 @@ export async function reviseSelection(params: {
       : "",
   ].filter(Boolean);
 
-  const response = await gemini.models.generateContent({
+  const response = await client.models.generateContent({
     model: selectModel("SELECTION_REVISE"),
     contents: [
       {

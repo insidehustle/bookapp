@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { generatePlanningDoc } from "@/lib/claude/generatePlanningDoc";
 import { renderPlanningDocMarkdown } from "@/lib/claude/schemas";
 import { toApiErrorResponse } from "@/lib/claude/errors";
@@ -36,7 +37,8 @@ export async function POST(
 
   let data: Record<string, unknown>;
   try {
-    data = await generatePlanningDoc({
+    const client = await getUserGeminiClient(userId);
+    data = await generatePlanningDoc(client, {
       type: "STYLE_BRIEF",
       projectTitle: project.title,
       premise: project.premise,

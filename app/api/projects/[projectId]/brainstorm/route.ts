@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getOwnedProject, requireUserId } from "@/lib/authz";
+import { getUserGeminiClient } from "@/lib/claude/client";
 import { generateBrainstorm } from "@/lib/claude/generateBrainstorm";
 import { toApiErrorResponse } from "@/lib/claude/errors";
 
@@ -21,7 +22,8 @@ export async function POST(
   const { prompt } = bodySchema.parse(await req.json());
 
   try {
-    const brainstorm = await generateBrainstorm({
+    const client = await getUserGeminiClient(userId);
+    const brainstorm = await generateBrainstorm(client, {
       prompt,
       projectTitle: project.title,
       genre: project.genre,

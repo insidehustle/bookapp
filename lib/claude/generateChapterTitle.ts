@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { gemini } from "@/lib/claude/client";
+import type { GoogleGenAI } from "@google/genai";
 import { selectModel } from "@/lib/claude/models";
 import { ChapterTitleSchema } from "@/lib/claude/schemas";
 import { ClaudeRefusalError, ClaudeTruncatedError, classifyStopReason } from "@/lib/claude/errors";
@@ -7,7 +7,7 @@ import { ClaudeRefusalError, ClaudeTruncatedError, classifyStopReason } from "@/
 const SYSTEM_PREAMBLE =
   "You title fiction chapters. Given a chapter's text, produce one short, evocative title (2-6 words) that captures its content without spoiling later chapters. Do not include the word 'Chapter' or a number - just the title itself.";
 
-export async function generateChapterTitle(params: {
+export async function generateChapterTitle(client: GoogleGenAI, params: {
   projectTitle: string;
   genre: string | null;
   chapterOrder: number;
@@ -22,7 +22,7 @@ export async function generateChapterTitle(params: {
     .filter(Boolean)
     .join("\n\n");
 
-  const response = await gemini.models.generateContent({
+  const response = await client.models.generateContent({
     model: selectModel("CHAPTER_TITLE"),
     contents: [{ role: "user", parts: [{ text: context }] }],
     config: {

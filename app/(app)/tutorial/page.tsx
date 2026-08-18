@@ -15,17 +15,18 @@ import {
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
-  { id: "create-project", label: "1. Create a project" },
-  { id: "story-bible", label: "2. Story Bible" },
-  { id: "files", label: "3. Upload files (optional)" },
-  { id: "voices", label: "4. Voices" },
-  { id: "chapters", label: "5. Writing chapters" },
-  { id: "whole-book", label: "6. Write the whole book" },
-  { id: "manuscript", label: "7. Manuscript, feedback, export & listen" },
-  { id: "brainstorm", label: "8. Brainstorm" },
-  { id: "chat", label: "9. Chat" },
-  { id: "settings", label: "10. Settings" },
-  { id: "mobile", label: "11. On your phone" },
+  { id: "api-key", label: "1. Add your Gemini API key" },
+  { id: "create-project", label: "2. Create a project" },
+  { id: "story-bible", label: "3. Story Bible" },
+  { id: "files", label: "4. Upload files (optional)" },
+  { id: "voices", label: "5. Voices" },
+  { id: "chapters", label: "6. Writing chapters" },
+  { id: "whole-book", label: "7. Write the whole book" },
+  { id: "manuscript", label: "8. Manuscript, feedback, export & listen" },
+  { id: "brainstorm", label: "9. Brainstorm" },
+  { id: "chat", label: "10. Chat" },
+  { id: "settings", label: "11. Settings" },
+  { id: "mobile", label: "12. On your phone" },
 ];
 
 function Section({
@@ -91,7 +92,35 @@ export default function TutorialPage() {
         </p>
       </Card>
 
-      <Section id="create-project" icon={<ChaptersIcon className={iconClass} />} title="1. Create a project">
+      <Section id="api-key" icon={<SettingsIcon className={iconClass} />} title="1. Add your Gemini API key">
+        <p>
+          AI features run on your own Gemini API key - there&apos;s no shared key, so nothing AI-related
+          works until you add one.
+        </p>
+        <ol>
+          <li>
+            Get a free key from{" "}
+            <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent hover:underline"
+            >
+              Google AI Studio
+            </a>
+            .
+          </li>
+          <li>
+            Paste it into{" "}
+            <Link href="/account" className="text-accent hover:underline">
+              Account Settings
+            </Link>{" "}
+            and save - it&apos;s encrypted before it&apos;s stored.
+          </li>
+        </ol>
+      </Section>
+
+      <Section id="create-project" icon={<ChaptersIcon className={iconClass} />} title="2. Create a project">
         <p>Each book you write lives in its own project. To start one:</p>
         <ol>
           <li>Click <strong>New project</strong> from the projects list.</li>
@@ -111,7 +140,7 @@ export default function TutorialPage() {
         </p>
       </Section>
 
-      <Section id="story-bible" icon={<PlanningIcon className={iconClass} />} title="2. Story Bible">
+      <Section id="story-bible" icon={<PlanningIcon className={iconClass} />} title="3. Story Bible">
         <p>
           Inside a project, the left sidebar has four Story Bible sections: <strong>Synopsis</strong>,{" "}
           <strong>Characters</strong>, <strong>Outline</strong>, and <strong>Style</strong>. Each one:
@@ -131,7 +160,7 @@ export default function TutorialPage() {
         </p>
       </Section>
 
-      <Section id="files" icon={<FilesIcon className={iconClass} />} title="3. Upload files (optional)">
+      <Section id="files" icon={<FilesIcon className={iconClass} />} title="4. Upload files (optional)">
         <p>
           If you already have a draft — a full manuscript or separate chapter files — upload it on
           the <strong>Files</strong> tab (.txt, .md, .docx, or .pdf). Files:
@@ -146,7 +175,7 @@ export default function TutorialPage() {
         </ol>
       </Section>
 
-      <Section id="voices" icon={<VoiceIcon className={iconClass} />} title="4. Voices">
+      <Section id="voices" icon={<VoiceIcon className={iconClass} />} title="5. Voices">
         <p>
           A Voice is a reusable writing style — tone, vocabulary, pacing, humor, quirks, things to
           avoid — that you create once and can attach to any project. Find it via the{" "}
@@ -172,7 +201,7 @@ export default function TutorialPage() {
         </p>
       </Section>
 
-      <Section id="chapters" icon={<ChaptersIcon className={iconClass} />} title="5. Writing chapters">
+      <Section id="chapters" icon={<ChaptersIcon className={iconClass} />} title="6. Writing chapters">
         <p>Click <strong>+ New</strong> under Chapters in the sidebar, or open an existing one. From there:</p>
         <ol>
           <li>
@@ -193,7 +222,7 @@ export default function TutorialPage() {
         <p>Don&apos;t forget to click <strong>Save</strong> after any manual edits — AI actions save automatically, typing doesn&apos;t.</p>
       </Section>
 
-      <Section id="whole-book" icon={<ChaptersIcon className={iconClass} />} title="6. Write the whole book">
+      <Section id="whole-book" icon={<ChaptersIcon className={iconClass} />} title="7. Write the whole book">
         <p>
           On a project&apos;s home page (click the project title), the{" "}
           <strong>Write the whole book</strong> panel drafts chapters one after another —
@@ -214,7 +243,7 @@ export default function TutorialPage() {
         </p>
       </Section>
 
-      <Section id="manuscript" icon={<ManuscriptIcon className={iconClass} />} title="7. Manuscript, feedback, export & listen">
+      <Section id="manuscript" icon={<ManuscriptIcon className={iconClass} />} title="8. Manuscript, feedback, export & listen">
         <p>The <strong>Manuscript</strong> link (next to Files in the sidebar) shows the whole book on one page:</p>
         <ol>
           <li>Jump-nav across chapters at the top.</li>
@@ -243,7 +272,7 @@ export default function TutorialPage() {
         </p>
       </Section>
 
-      <Section id="brainstorm" icon={<BrainstormIcon className={iconClass} />} title="8. Brainstorm">
+      <Section id="brainstorm" icon={<BrainstormIcon className={iconClass} />} title="9. Brainstorm">
         <p>
           A standalone idea generator under Tools in the sidebar — type a short prompt
           (&quot;surname for a stoic detective&quot;, &quot;title ideas for a heist novel&quot;) and
@@ -251,7 +280,7 @@ export default function TutorialPage() {
         </p>
       </Section>
 
-      <Section id="chat" icon={<ChatIcon className={iconClass} />} title="9. Chat">
+      <Section id="chat" icon={<ChatIcon className={iconClass} />} title="10. Chat">
         <p>
           The persistent chat panel on the right (or behind the chat icon on mobile) is a
           freeform assistant grounded in your project&apos;s Story Bible and manuscript — use it to
@@ -260,15 +289,19 @@ export default function TutorialPage() {
         </p>
       </Section>
 
-      <Section id="settings" icon={<SettingsIcon className={iconClass} />} title="10. Settings">
+      <Section id="settings" icon={<SettingsIcon className={iconClass} />} title="11. Settings">
         <p>
           Every project has a <strong>Settings</strong> page (next to Files/Manuscript) showing
           everything you filled in at creation — title, genre, premise, target chapters/words per
-          chapter, and the attached Voice — all editable at any time.
+          chapter, and the attached Voice — all editable at any time. That&apos;s separate from{" "}
+          <Link href="/account" className="text-accent hover:underline">
+            Account Settings
+          </Link>
+          , which just holds your Gemini API key and applies across every project.
         </p>
       </Section>
 
-      <Section id="mobile" icon={<FilesIcon className={iconClass} />} title="11. On your phone">
+      <Section id="mobile" icon={<FilesIcon className={iconClass} />} title="12. On your phone">
         <p>
           The app is responsive. On a small screen, the chapter/Story Bible sidebar and chat panel
           become slide-in drawers — tap the ☰ icon (top-left) for chapters and Story Bible, or the
