@@ -36,20 +36,21 @@ export function WriteWholeBookPanel({
   const hasTarget = Boolean(targetChapterCount && targetWordsPerChapter);
   const targetWordCount = hasTarget ? targetChapterCount! * targetWordsPerChapter! : null;
   const totalWords = chapters.reduce((sum, c) => sum + c.wordCount, 0);
-  const progressPct = targetWordCount
-    ? Math.min(100, Math.round((totalWords / targetWordCount) * 100))
+  const completedChapters = chapters.filter((c) => c.content.trim()).length;
+  const progressPct = targetChapterCount
+    ? Math.min(100, Math.round((completedChapters / targetChapterCount) * 100))
     : 0;
 
   function stop() {
     stopRequested.current = true;
   }
 
-  async function draftChapter(chapter: ChapterState, wordsRemaining: number) {
+  async function draftChapter(chapter: ChapterState) {
     const response = await fetch(`/api/projects/${projectId}/chapters/${chapter.id}/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        targetWordCount: Math.min(wordsRemaining, targetWordsPerChapter!),
+        targetWordCount: targetWordsPerChapter!,
       }),
     });
     if (!response.ok || !response.body) {
@@ -74,7 +75,7 @@ export function WriteWholeBookPanel({
   }
 
   async function handleWriteWholeBook() {
-    if (!targetWordCount) return;
+    if (!targetChapterCount || !targetWordsPerChapter) return;
     setIsRunning(true);
     setError(null);
     stopRequested.current = false;
@@ -83,7 +84,7 @@ export function WriteWholeBookPanel({
       let current = [...chapters];
       let iterations = 0;
 
-      while (current.reduce((sum, c) => sum + c.wordCount, 0) < targetWordCount) {
+      while (current.filter((c) => c.content.trim()).length < targetChapterCount) {
         if (stopRequested.current) break;
         if (++iterations > MAX_ITERATIONS) {
           throw new Error(
@@ -99,11 +100,9 @@ export function WriteWholeBookPanel({
           setChapters(current);
         }
 
-        const wordsSoFar = current.reduce((sum, c) => sum + c.wordCount, 0);
-        const wordsRemaining = targetWordCount - wordsSoFar;
         setCurrentLabel(`Writing Chapter ${next.order}: ${next.title}…`);
 
-        const { text: content, title } = await draftChapter(next, wordsRemaining);
+        const { text: content, title } = await draftChapter(next);
         const wordCount = content.split(/\s+/).filter(Boolean).length;
         current = current.map((c) =>
           c.id === next!.id ? { ...c, content, wordCount, ...(title ? { title } : {}) } : c,
@@ -119,7 +118,7 @@ export function WriteWholeBookPanel({
     }
   }
 
-  if (!targetWordCount) {
+  if (!hasTarget) {
     return (
       <Card className="flex flex-col gap-2">
         <h2 className="font-medium">Write the whole book</h2>
@@ -149,8 +148,8 @@ export function WriteWholeBookPanel({
         )}
       </div>
       <p className="text-xs text-muted">
-        Drafts chapters one after another, in order, until the manuscript reaches your target
-        length - each chapter is written with an explicit length target so the book isn&apos;t
+        Drafts chapters one after another, in order, until the manuscript has all of your target
+        chapters - each chapter is written with an explicit length target so the book isn&apos;t
         cut short.
       </p>
 
@@ -162,9 +161,9 @@ export function WriteWholeBookPanel({
           />
         </div>
         <p className="font-mono text-xs text-muted">
-          {totalWords.toLocaleString()} / {targetWordCount.toLocaleString()} words ({progressPct}%)
+          {completedChapters} / {targetChapterCount} chapters ({progressPct}%)
           {" · "}
-          {chapters.filter((c) => c.content.trim()).length} / {targetChapterCount} chapters
+          {totalWords.toLocaleString()} / {targetWordCount!.toLocaleString()} words
         </p>
       </div>
 
