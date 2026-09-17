@@ -31,6 +31,7 @@ export function StoryBibleDocEditor({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [masterPrompt, setMasterPrompt] = useState("");
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(
     () => new Set(files.map((f) => f.id)),
@@ -55,7 +56,11 @@ export function StoryBibleDocEditor({
       const response = await fetch(`/api/projects/${projectId}/planning-docs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: docType, fileIds: Array.from(selectedFileIds) }),
+        body: JSON.stringify({
+          type: docType,
+          fileIds: Array.from(selectedFileIds),
+          notes: masterPrompt.trim() || undefined,
+        }),
       });
       const body = await response.json();
       if (!response.ok) {
@@ -120,6 +125,19 @@ export function StoryBibleDocEditor({
             </Button>
           </div>
         )}
+      </div>
+
+      <div className="rounded-lg border border-border bg-surface/60 p-3">
+        <label htmlFor={`master-prompt-${docType}`} className="mb-2 block text-xs font-medium uppercase tracking-wide text-muted">
+          Master prompt
+        </label>
+        <textarea
+          id={`master-prompt-${docType}`}
+          value={masterPrompt}
+          onChange={(event) => setMasterPrompt(event.target.value)}
+          placeholder="Give the AI the full creative brief: tone, themes, character dynamics, target audience, and anything you want the Story Bible to preserve or change."
+          className="min-h-24 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
+        />
       </div>
 
       {showFilePicker && files.length > 0 && (
